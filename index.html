@@ -5,8 +5,9 @@
   skill = velocidade de skills (espada, distância, magic level...)
   Depois de salvar, feche e abra o jogo de novo.
   Dentro do jogo, em Configurações → Velocidade de XP, dá para trocar só para um personagem.
+  online = dados do Firebase para o modo online (veja ONLINE-FIREBASE.txt). Deixe vazio para jogar sozinho.
 ====================================================================== -->
-<script>window.ECO_CONFIG={xp:3,skill:2};</script>
+<script>window.ECO_CONFIG={xp:3,skill:2,online:{apiKey:'AIzaSyALIiTIYhNiCWpqxV6tXAqlyGF-ePYaE8o',databaseURL:'https://eco-das-cavernas-default-rtdb.firebaseio.com'}};</script>
 <title>Eco das Cavernas</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1442,7 +1443,7 @@ function draw(){
   const L=[];const x0=CAM.x/TS-3,x1=(CAM.x+bw)/TS+3,y0=CAM.y/TS-3,y1=(CAM.y+bh)/TS+3;
   for(const w of (Wd.tex._walls||[]))if(w.x>x0&&w.x<x1&&w.y>y0&&w.y<y1)L.push({w,d:w.y+w.x*0.001});
   for(const m of Wd.mobs){const [mx,my]=epos(m);L.push({m,mx,my,d:lerp(m.py,m.y,m.p)+.5+m.x*0.001})}
-  for(const n of (Wd.npcs||[]))L.push({n,d:n.y+.5+n.x*0.001});for(const s of (Wd.statues||[]))L.push({st:s,d:s.y+.5+s.x*0.001});
+  for(const n of (Wd.npcs||[]))L.push({n,d:n.y+.5+n.x*0.001});for(const s of (Wd.statues||[]))L.push({st:s,d:s.y+.5+s.x*0.001});if(typeof ghostsUpdate==='function'){ghostsUpdate();for(const gh of GHOSTS)L.push({gh,d:gh.ry+.5+gh.rx*0.001})}
   L.push({pl:1,d:lerp(Pl.py,Pl.y,Pl.p)+.5+Pl.x*0.001});L.sort((a,b)=>a.d-b.d);
   for(const e of L){
     if(e.w&&e.w.door){const dr=e.w.door,k=xKey(dr.isOpen?dr.open:dr.closed,dr.x,dr.y);if(k){const [w,h]=otWH(k);ot(g,k,dr.x*TS-CAM.x+32-w,dr.y*TS-CAM.y+32-h)}continue}
@@ -1452,6 +1453,7 @@ function draw(){
     if(e.pl){const k=frameKey('p_'+S.voc,Pl.dir,Pl.p<1,tt),[w,h]=otWH(k),x=Math.round(px-CAM.x)+32-w-8,y=Math.round(py-CAM.y)+32-h-8;
       if(Pl.shield>0){g.globalAlpha=.25+.12*Math.sin(now/150);E(g,px-CAM.x+16,py-CAM.y+12,15,15,'#6fa8ff');g.globalAlpha=1}
       if(typeof drawPlayer==='function'&&drawPlayer(g,px,py,tt))continue;ot(g,k,x,y);continue}
+    if(e.gh){drawGhost(g,e.gh,tt);continue}
     const m=e.m;
     if(LOOK[m.id]){const k=frameKey('o'+LOOK[m.id],m.dir||'S',m.p<1||FLY(m.d.shape),tt),[w,h]=otWH(k);let sc=m.d.boss?1.5:1;
       const x=Math.round(e.mx-CAM.x)+32-w*sc-8*sc,y=Math.round(e.my-CAM.y)+32-h*sc-8*sc;const mm=OT_META[k];
@@ -1471,6 +1473,7 @@ function draw(){
     if(sx<-80||sy<-80||sx>cv.width+80||sy>cv.height+80)continue;const f=m.hp/m.max;
     label(m.d.nome,sx,sy-8*DPR,m.id==='boneco'?'#d9cfb8':hpCol(f));bar(sx,sy-5*DPR,m.id==='boneco'?1:f)}
   for(const n of (Wd.npcs||[])){const nx=n.p<1?lerp(n.px,n.x,n.p):n.x,ny=n.p<1?lerp(n.py,n.y,n.p):n.y,sx=(nx*TS+16-8-CAM.x)*SCALE,sy=(ny*TS-CAM.y-8)*SCALE;if(sx>-80&&sx<cv.width+80&&sy>-80&&sy<cv.height+80)label(n.nome,sx,sy-6*DPR,'#5fe07a')}
+  if(typeof labelGhosts==='function')labelGhosts(label,bar);
   for(const s of (Wd.signs||[])){const sx=(s.x*TS+16-CAM.x)*SCALE,sy=(s.y*TS-CAM.y)*SCALE;if(sx>-120&&sx<cv.width+120&&sy>-80&&sy<cv.height+80)label(s.t,sx,sy,'#ffe27a',Math.round(10*DPR))}
   const psx=(px+16-8-CAM.x)*SCALE,psy=(py-CAM.y-8)*SCALE,d=D();
   label(S.nome,psx,psy-8*DPR,hpCol(S.hp/d.hp));bar(psx,psy-5*DPR,S.hp/d.hp);
@@ -5184,5 +5187,82 @@ SHEETS.aljava=function(){S.ammo=S.ammo||{};if(S.bag)for(const [id] of AMMO)if(S.
     const btn=id===a?'<span class="chip">em uso</span>':have>0&&ok&&!lock?`<button class="btn sm pri" data-a="ammosel" data-v="${id}">Usar</button>`:'';
     html+=`<div class="li" style="${lock?'opacity:.55':''}"><img class="ic" src="${ammoIcon(id)}" alt=""><div class="t"><b>${it.nome}</b><small>Nível ${it.lvl} · ataque +${it.atk}${it.el?` · ${EL[it.el][0]}`:''} · você tem <b>${fmtN(have)}</b>${lock?` · <span class="bad">precisa de nível ${it.lvl}</span>`:''}</small></div>${btn}</div>${lock||(tp&&!ok)?'':qbuyHTML('buyammo',id)}`}
   return['Aljava',`<p class="muted" style="margin:0 0 8px">${tp?`${esc(w.nome)} usa <b>${tn}</b>. Toque em <b>Usar</b> para trocar. Cada ataque básico gasta 1.`:'Sua arma atual não usa munição. Arcos usam flechas e bestas usam virotes.'}</p>${html}</div>`]};
+
+// ===== v38: modo ONLINE (Firebase Realtime Database) — ver outros jogadores, chat global, quem está online e ranking =====
+// Configuração: bloco ECO_CONFIG.online no topo do arquivo, ou Configurações → Modo online (cola apiKey e databaseURL).
+// Os monstros continuam sendo de cada jogador; o que é compartilhado é a posição, o visual, o chat e o ranking.
+const NET={cfg:null,uid:null,tok:null,refresh:null,exp:0,st:'desligado',players:{},chat:[],es:null,esc:null,sent:'',sentT:0,off:null,rankT:0,rank:null,err:''};
+function netCfg(){let c=(window.ECO_CONFIG||{}).online||null;try{const s=JSON.parse(localStorage.getItem('eco-online')||'null');if(s&&s.apiKey&&s.databaseURL)c=s}catch(e){}return c&&c.apiKey&&c.databaseURL?c:null}
+const netBase=()=>NET.cfg.databaseURL.replace(/\/+$/,'');
+const netURL=(p,q)=>`${netBase()}/${p}.json?auth=${encodeURIComponent(NET.tok)}${q?'&'+q:''}`;
+const netOn=()=>!!(NET.cfg&&NET.tok&&S&&S.netOff!==true);
+async function netAuth(){const c=NET.cfg;let r=null;try{r=JSON.parse(localStorage.getItem('eco-online-auth')||'null')}catch(e){}
+  const keep=(uid,tok,ref,exp)=>{NET.uid=uid;NET.tok=tok;NET.refresh=ref;NET.exp=Date.now()+(+exp-120)*1000;try{localStorage.setItem('eco-online-auth',JSON.stringify({refresh:ref,key:c.apiKey}))}catch(e){}};
+  if(r&&r.refresh&&r.key===c.apiKey){try{const res=await fetch(`https://securetoken.googleapis.com/v1/token?key=${c.apiKey}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(r.refresh)});
+    if(res.ok){const j=await res.json();keep(j.user_id,j.id_token,j.refresh_token,j.expires_in);return}}catch(e){}}
+  const res=await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${c.apiKey}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});
+  if(!res.ok){let m='';try{m=(await res.json()).error.message}catch(e){}throw new Error('login '+res.status+' '+m)}const j=await res.json();keep(j.localId,j.idToken,j.refreshToken,j.expiresIn)}
+async function netPut(p,data){if(!netOn())return;try{const r=await fetch(netURL(p),{method:'PUT',body:JSON.stringify(data)});if(r.status===401){NET.exp=0}}catch(e){}}
+// ---------- onde o jogador está (mesmo mapa = se enxergam) ----------
+function zoneKey(){if(!S||!Wd)return'';if(Wd.tower)return'';if(Wd.hall)return'hall_'+Wd.hall;if(S.hunt>=0){const h=HUNTS[S.hunt];return'h_'+(h&&h.id||S.hunt)+'_'+(S.hf||0)}return'c_'+(S.city||'pedra')+'_'+(S.z||7)}
+function zoneName(z){if(!z)return'—';const m=/^h_(.+)_(\d+)$/.exec(z);if(m){const h=HUNTS.find(x=>x.id===m[1]);return h?(h.road?'Estrada: ':'')+h.nome+(+m[2]?` · andar ${+m[2]+1}`:''):'Hunt'}
+  if(/^hall_/.test(z))return'Salão das Hunts';const c=/^c_([^_]+)/.exec(z);return c&&typeof CITIES!=='undefined'&&CITIES[c[1]]?CITIES[c[1]].nome:'Cidade'}
+// ---------- recebe as posições de todos (stream do Firebase) ----------
+function netStream(){if(NET.es){NET.es.close();NET.es=null}if(NET.esc){NET.esc.close();NET.esc=null}if(!netOn())return;
+  const es=new EventSource(netURL('players'));NET.es=es;const now=()=>Date.now();
+  const setP=(uid,v)=>{if(v==null){delete NET.players[uid];return}const o=NET.players[uid]||{};Object.assign(o,v);o._rt=now();if(o.rx==null||Math.abs(o.rx-o.x)>6||Math.abs(o.ry-o.y)>6||o._z!==o.z){o.rx=o.x;o.ry=o.y}o._z=o.z;NET.players[uid]=o;if(uid===NET.uid&&o.t)NET.off=o.t-now()};
+  const onMsg=(e,patch)=>{let d;try{d=JSON.parse(e.data)}catch(x){return}if(!d)return;const parts=d.path.split('/').filter(Boolean);
+    if(!parts.length){if(!patch)NET.players={};for(const k in (d.data||{}))setP(k,d.data[k]);return}
+    const uid=parts[0];if(parts.length===1)setP(uid,patch?d.data:(d.data===null?null:d.data));else{const o={};o[parts[1]]=d.data;setP(uid,o)}};
+  es.addEventListener('put',e=>onMsg(e,false));es.addEventListener('patch',e=>onMsg(e,true));
+  es.addEventListener('auth_revoked',()=>{NET.exp=0});es.addEventListener('cancel',()=>{NET.err='Sem permissão de leitura (confira as regras do banco).';NET.st='erro'});
+  es.onopen=()=>{NET.st='online';NET.err=''};es.onerror=()=>{if(NET.st==='online')NET.st='reconectando'};
+  // chat global (últimas 30 mensagens)
+  const ec=new EventSource(netURL('chat','orderBy=%22$key%22&limitToLast=30'));NET.esc=ec;
+  const addC=(k,m)=>{if(!m||!m.m||NET.chat.some(x=>x.k===k))return;NET.chat.push({k,...m});NET.chat.sort((a,b)=>a.k<b.k?-1:1);if(NET.chat.length>60)NET.chat.shift();
+    if(NET._chatReady&&m.u!==NET.uid&&typeof msg==='function')msg(`[Global] ${m.n}: ${m.m}`,'c-sys');if(UI&&UI.sheet==='online'&&(UI.sub||'')==='chat')renderSheet()};
+  ec.addEventListener('put',e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}if(!d)return;if(d.path==='/'){for(const k in (d.data||{}))addC(k,d.data[k]);setTimeout(()=>NET._chatReady=1,500)}else addC(d.path.slice(1),d.data)})}
+// ---------- liga, mantém o login e envia a própria posição ----------
+async function netStart(){NET.cfg=netCfg();if(!NET.cfg){NET.st='sem configuração';return}if(S&&S.netOff===true){NET.st='desligado';return}
+  NET.st='conectando';try{await netAuth();netStream();netSend(true);netRank(true)}catch(e){NET.st='erro';NET.err=String(e.message||e)}}
+function netState(){return{n:String(S.nome||'?').slice(0,20),l:S.lvl,v:S.voc,a:S.addon||0,z:zoneKey(),x:Pl.x,y:Pl.y,d:Pl.dir||'S',hp:Math.round(Math.max(0,Math.min(1,S.hp/D().hp))*100)}}
+function netSend(force){if(!netOn()||!Pl)return;const s=netState(),sig=JSON.stringify(s),n=Date.now();if(!force&&sig===NET.sent&&n-NET.sentT<10000)return;if(!force&&n-NET.sentT<450)return;NET.sent=sig;NET.sentT=n;netPut('players/'+NET.uid,{...s,t:{'.sv':'timestamp'}})}
+function netRank(force){if(!netOn())return;const n=Date.now();if(!force&&n-NET.rankT<120000)return;NET.rankT=n;netPut('rank/'+NET.uid,{n:String(S.nome||'?').slice(0,20),l:S.lvl,v:S.voc,t:{'.sv':'timestamp'}})}
+setInterval(()=>{if(!S)return;if(NET.cfg&&NET.tok&&Date.now()>NET.exp&&NET.st!=='conectando'){NET.st='conectando';netAuth().then(()=>{netStream();NET.st='online'}).catch(e=>{NET.st='erro';NET.err=String(e.message||e)})}netSend(false);netRank(false)},400);
+const _gx22=gainExp;gainExp=function(x){const l0=S&&S.lvl;const r=_gx22(x);if(S&&S.lvl!==l0)netRank(true);return r};
+addEventListener('pagehide',()=>{if(netOn())try{fetch(netURL('players/'+NET.uid),{method:'DELETE',keepalive:true})}catch(e){}});
+const _bt22=boot;boot=function(d){const r=_bt22.apply(this,arguments);setTimeout(netStart,800);return r};
+// ---------- quem está online agora ----------
+function netFresh(){const n=Date.now(),out=[];for(const uid in NET.players){const p=NET.players[uid];if(!p||uid===NET.uid)continue;const age=NET.off!=null&&p.t?n+NET.off-p.t:n-(p._rt||0);if(age<40000)out.push([uid,p])}return out}
+// ---------- desenha os outros jogadores no mapa ----------
+let GHOSTS=[];let ghT=performance.now();
+function ghostsUpdate(){const now=performance.now(),dt=Math.min(.2,(now-ghT)/1000);ghT=now;const z=zoneKey();GHOSTS=[];if(!z||!netOn())return;
+  for(const [uid,p] of netFresh()){if(p.z!==z)continue;if(p.rx==null||isNaN(p.rx)||p._z!==p.z){p.rx=p.x;p.ry=p.y;p._z=p.z}const sp=dt*5.5;const dx=p.x-p.rx,dy=p.y-p.ry;p.moving=Math.abs(dx)+Math.abs(dy)>.05;p.rx+=Math.sign(dx)*Math.min(Math.abs(dx),sp);p.ry+=Math.sign(dy)*Math.min(Math.abs(dy),sp);GHOSTS.push(p)}}
+function drawGhost(g,p,tt){const base=`p_${VOC[p.v]?p.v:'cavaleiro'}`,k=frameKey(base,p.d||'S',p.moving,tt),[w,h]=otWH(k);ot(g,k,Math.round(p.rx*TS)-CAM.x+32-w-8,Math.round(p.ry*TS)-CAM.y+32-h-8)}
+function labelGhosts(label,bar){for(const p of GHOSTS){const sx=(p.rx*TS+16-8-CAM.x)*SCALE,sy=(p.ry*TS-CAM.y-8)*SCALE;if(sx<-80||sy<-80||sx>cv.width+80||sy>cv.height+80)continue;label(`${p.n} [${p.l}]`,sx,sy-8*DPR,'#8fd0ff');bar(sx,sy-5*DPR,(p.hp||100)/100)}}
+// ---------- tela "Online": jogadores, chat global e ranking ----------
+SHEETS.online=function(){const sub=UI.sub||'lista',tab=(k,n)=>`<button class="btn sm ${sub===k?'pri':''}" data-a="netsub" data-v="${k}">${n}</button>`;
+  const st=NET.cfg?`<span style="color:${NET.st==='online'?'#2ecc40':NET.st==='erro'?'#ff6a5a':'#e6c46b'}">● ${NET.st}</span>`:'<span class="bad">● sem configuração</span>';
+  let body='';
+  if(!NET.cfg)body=`<p class="muted">O modo online precisa de um banco de dados gratuito do Firebase (Google). Veja o passo a passo no arquivo <b>ONLINE-FIREBASE.txt</b> da pasta do jogo e cole os dados em <b>Configurações → Modo online</b>.</p><p class="muted">Obs.: dentro do link do Claude o online não funciona (a página não pode acessar sites externos). Use o link do GitHub ou o arquivo .html.</p>`;
+  else if(sub==='lista'){const L=netFresh().sort((a,b)=>b[1].l-a[1].l);body=`<p class="muted" style="margin:0 0 6px">${L.length+1} jogador(es) online (contando você). Quem está no mesmo mapa aparece andando na tela.</p><div class="list"><div class="li"><img class="ic" src="${avatarURL(S.voc)}" alt=""><div class="t"><b>${esc(S.nome)} (você)</b><small>Nível ${S.lvl} · ${VOC[S.voc].nome} · ${esc(zoneName(zoneKey()))}</small></div></div>${L.map(([u,p])=>`<div class="li"><img class="ic" src="${avatarURL(VOC[p.v]?p.v:'cavaleiro')}" alt=""><div class="t"><b>${esc(p.n)}</b><small>Nível ${p.l} · ${VOC[p.v]?VOC[p.v].nome:''} · ${esc(zoneName(p.z))}${p.z===zoneKey()?' · <span class="gold">aqui perto</span>':''}</small></div></div>`).join('')}</div>`}
+  else if(sub==='chat'){body=`<div class="list" style="max-height:48vh;overflow:auto" id="netchat">${NET.chat.slice(-40).map(m=>`<div class="li" style="padding:4px 8px"><div class="t"><b style="color:${m.u===NET.uid?'#ffd24a':'#8fd0ff'}">${esc(m.n)}${m.l?` [${m.l}]`:''}</b><small style="white-space:normal;color:#ddd">${esc(m.m)}</small></div></div>`).join('')||'<p class="muted">Nenhuma mensagem ainda.</p>'}</div>
+    <form id="netform" class="row" style="gap:6px;margin-top:8px"><input class="txt" id="netin" maxlength="140" placeholder="Mensagem para todos" style="flex:1" autocomplete="off"><button class="btn pri" type="submit">Enviar</button></form>`}
+  else{if(!NET.rank||Date.now()-(NET.rank.t||0)>30000)netLoadRank();const R=(NET.rank&&NET.rank.list)||[];body=R.length?`<div class="list">${R.map((r,i)=>`<div class="li"><b style="width:28px;text-align:center;color:${i<3?'#ffd24a':'#aaa'}">${i+1}º</b><img class="ic" src="${avatarURL(VOC[r.v]?r.v:'cavaleiro')}" alt=""><div class="t"><b>${esc(r.n)}${r.u===NET.uid?' (você)':''}</b><small>Nível ${r.l} · ${VOC[r.v]?VOC[r.v].nome:''}</small></div></div>`).join('')}</div>`:'<p class="muted">Carregando ranking…</p>'}
+  return['Online',`<div class="row sp" style="margin-bottom:8px"><div class="row" style="gap:4px">${tab('lista','Jogadores')}${tab('chat','Chat global')}${tab('rank','Ranking')}</div><small>${st}</small></div>${NET.err?`<p class="bad" style="font-size:.8rem">${esc(NET.err)}</p>`:''}${body}`]};
+ACT.netsub=v=>{UI.sub=v;renderSheet();if(v==='chat')setTimeout(()=>{const c=$('netchat');if(c)c.scrollTop=c.scrollHeight},30)};
+async function netLoadRank(){if(!netOn())return;NET.rank={t:Date.now(),list:(NET.rank&&NET.rank.list)||[]};try{const r=await fetch(netURL('rank','orderBy=%22l%22&limitToLast=50'));const j=await r.json();if(j&&!j.error){NET.rank.list=Object.entries(j).map(([u,v])=>({u,...v})).sort((a,b)=>b.l-a.l);if(UI.sheet==='online')renderSheet()}else if(j&&j.error)NET.err='Ranking: '+j.error}catch(e){}}
+document.addEventListener('submit',async e=>{if(e.target.id!=='netform')return;e.preventDefault();const i=$('netin'),m=(i.value||'').trim().slice(0,140);if(!m||!netOn())return;i.value='';
+  try{await fetch(netURL('chat'),{method:'POST',body:JSON.stringify({u:NET.uid,n:String(S.nome).slice(0,20),l:S.lvl,m,t:{'.sv':'timestamp'}})})}catch(x){toast('Não consegui enviar.')}},true);
+// botão no Menu
+const _menu22=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu22();const n=netFresh().length;return[t,b.replace('<h3>Atividades</h3><div class="menu-sec">',`<h3>Atividades</h3><div class="menu-sec"><button class="mi" data-a="open" data-v="online"><img src="${icon('hunts')}" alt="">Online${NET.cfg?` (${n+1})`:''}</button>`)]};
+// configurações
+ACT.netsave=()=>{const k=($('net-key')||{}).value||'',u=($('net-url')||{}).value||'';if(!k.trim()||!/^https:\/\/.+/.test(u.trim()))return toast('Cole a apiKey e a databaseURL (começa com https://).');try{localStorage.setItem('eco-online',JSON.stringify({apiKey:k.trim(),databaseURL:u.trim()}))}catch(e){}S.netOff=false;toast('Conectando…');netStart().then(()=>renderSheet())};
+ACT.nettog=()=>{S.netOff=!(S.netOff===true)?true:false;if(S.netOff){if(NET.es)NET.es.close();if(NET.esc)NET.esc.close();if(NET.tok)fetch(netURL('players/'+NET.uid),{method:'DELETE'}).catch(()=>{});NET.st='desligado'}else netStart();renderSheet()};
+const _cfg22=SHEETS.config;SHEETS.config=function(){const r=_cfg22();try{const c=netCfg()||{};r[1]+=`<h3 style="margin-top:14px">Modo online</h3><p class="muted" style="margin:0 0 6px">Veja outros jogadores, converse no chat global e apareça no ranking. Usa um banco grátis do Firebase (passo a passo no arquivo ONLINE-FIREBASE.txt).</p>
+  <div class="kv"><span>Situação</span><b>${esc(NET.st)}</b></div>${NET.err?`<p class="bad" style="font-size:.8rem">${esc(NET.err)}</p>`:''}
+  <label class="muted" style="display:block;font-size:.8rem">apiKey<input class="txt" id="net-key" value="${esc(c.apiKey||'')}" style="width:100%" autocomplete="off"></label>
+  <label class="muted" style="display:block;font-size:.8rem;margin-top:4px">databaseURL<input class="txt" id="net-url" value="${esc(c.databaseURL||'')}" placeholder="https://seu-projeto-default-rtdb.firebaseio.com" style="width:100%" autocomplete="off"></label>
+  <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm pri" data-a="netsave">Salvar e conectar</button>${NET.cfg?`<button class="btn sm" data-a="nettog">${S.netOff===true?'Ligar online':'Desligar online'}</button>`:''}</div>`}catch(e){}return r};
 
 </script>
