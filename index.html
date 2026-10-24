@@ -1591,7 +1591,7 @@ function draw(){
   for(const n of (Wd.npcs||[])){const nx=n.p<1?lerp(n.px,n.x,n.p):n.x,ny=n.p<1?lerp(n.py,n.y,n.p):n.y,sx=(nx*TS+16-8-CAM.x)*SCALE,sy=(ny*TS-CAM.y-8)*SCALE;if(sx>-80&&sx<cv.width+80&&sy>-80&&sy<cv.height+80)label(n.nome,sx,sy-6*DPR,'#5fe07a')}
   if(typeof labelGhosts==='function')labelGhosts(label,bar);
   for(const s of (Wd.signs||[])){const sx=(s.x*TS+16-CAM.x)*SCALE,sy=(s.y*TS-CAM.y)*SCALE;if(sx>-120&&sx<cv.width+120&&sy>-80&&sy<cv.height+80)label(s.t,sx,sy,'#ffe27a',Math.round(10*DPR))}
-  const psx=(px+16-8-CAM.x)*SCALE,psy=(py-CAM.y-8)*SCALE,d=D();
+  const psx=(px+16-8-CAM.x)*SCALE,psy=(py-CAM.y-8)*SCALE,d=D();if(window.eco44Self)try{eco44Self(label,psx,psy)}catch(e){}
   label(S.nome,psx,psy-8*DPR,hpCol(S.hp/d.hp));bar(psx,psy-5*DPR,S.hp/d.hp);
   if(Pl.word){ctx.globalAlpha=Pl.word.t>1?1-(Pl.word.t-1)/.4:1;label(Pl.word.s,psx,psy-22*DPR,'#ff9a2a');ctx.globalAlpha=1}
   for(const t of Wd.txt){const k=t.t/t.dur,sx=(t.x-8-CAM.x)*SCALE,sy=(t.y-8-CAM.y)*SCALE-k*30*DPR;ctx.globalAlpha=k>.7?1-(k-.7)/.3:1;label(t.s,sx,sy,t.col,t.big?fs*1.25:fs);ctx.globalAlpha=1}
@@ -2195,7 +2195,7 @@ const _fi=SHEETS.ficha;SHEETS.ficha=function(){const [t,b]=_fi(),d=D();return[t,
     if(Wd.theme==='town'){for(const b of (Wd.buildings||[])){cg.fillStyle='#8a7a66';cg.fillRect(b.x0,b.y0,b.x1-b.x0+1,b.y1-b.y0+1)}}
     for(const e of (Wd.exits||[]).concat(Wd.changes||[])){cg.fillStyle='#ffe27a';cg.fillRect(e.x,e.y,1,1)}base=c;cacheW=Wd}
   setInterval(()=>{if(!Wd||!S){mm.style.display='none';return}mm.style.display='';if(cacheW!==Wd)build();
-    const R=window.MM_R||20,s=240/(R*2+1);g.imageSmoothingEnabled=false;g.fillStyle='#000';g.fillRect(0,0,240,240);g.drawImage(base,Pl.x-R,Pl.y-R,R*2+1,R*2+1,0,0,240,240);
+    const R=window.MM_R||20,s=240/(R*2+1);g.imageSmoothingEnabled=false;g.fillStyle=(Wd.theme==='town'||Wd.theme==='forest')?'#2a4d1f':'#000';g.fillRect(0,0,240,240);g.drawImage(base,Pl.x-R,Pl.y-R,R*2+1,R*2+1,0,0,240,240);
     for(const m of Wd.mobs){if(Math.abs(m.x-Pl.x)>R||Math.abs(m.y-Pl.y)>R)continue;g.fillStyle=m.d.boss?'#ff3aff':'#ff3a2a';g.fillRect((m.x-Pl.x+R)*s,(m.y-Pl.y+R)*s,s,s)}
     for(const n of (Wd.npcs||[])){g.fillStyle='#ffe27a';g.fillRect((n.x-Pl.x+R)*s,(n.y-Pl.y+R)*s,s,s)}
     g.fillStyle='#fff';g.fillRect(R*s-1,R*s-1,s+2,s+2)},250);
@@ -2223,7 +2223,7 @@ ACT.equip=v=>{const it=ITEMS[v];
 // --- capacidade (peso) e depósito ---
 const WEIGHT={arma:60,armadura:120,elmo:40,calca:50,botas:30,escudo:80,anel:1,amuleto:5};
 const weightOf=id=>{const it=ITEMS[id];if(!it)return 0;if(it.slot)return WEIGHT[it.slot]||20;if(it.inf)return 0;return it.value>5000?3:.5};
-const bagWeight=()=>Object.entries(S.bag||{}).reduce((s,[id,n])=>s+weightOf(id)*n,0);
+const bagWeight=()=>Object.entries(S.bag||{}).reduce((s,[id,n])=>s+weightOf(id)*n,0)+(window.eco44Eq?eco44Eq():0);
 let capWarn=0;
 const _gainLoot3=gainLoot;gainLoot=function(id,n){
   if(ITEMS[id]&&!ITEMS[id].inf){const cap=D().cap,w=weightOf(id)*n;
@@ -5626,7 +5626,7 @@ const _menu41=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu41();return[t,
 function entryDialog(title,body){const old=document.querySelector('.eco40-dialog');if(old)old.remove();const d=document.createElement('div');d.className='eco40-dialog';d.innerHTML=`<section role="dialog" aria-modal="true" aria-label="${esc(title)}"><h2>${title}</h2>${body}<div class="actions"><button class="btn pri" data-entry-close>Voltar ao menu</button></div></section>`;document.body.appendChild(d);d.querySelector('[data-entry-close]').onclick=()=>d.remove()}
 function entryShow(requiresAuth,done){entryShow.presented=true;let g=$('gate');if(!g){g=document.createElement('div');g.id='gate';document.body.appendChild(g)}g.classList.add('eco40-gate');g.innerHTML=`<main class="eco40-entry"><section class="eco40-brand"><p class="eyebrow">Um RPG online de exploração e evolução</p><h1>Eco das<br>Cavernas</h1><p>Explore terras esquecidas, enfrente criaturas, construa seu personagem e encontre outros aventureiros.</p><button class="eco40-manual" data-entry="manual">Mecânicas do jogo <span>Conheça o mundo, as classes e todas as mecânicas</span></button></section><nav class="eco40-menu" aria-label="Entrar no jogo"><p class="eco40-menu-label">Entrar no jogo</p>${requiresAuth?`<form class="eco40-login" id="email-login"><label>E-mail<input id="login-email" type="email" autocomplete="email" required placeholder="seu@email.com"></label><label>Senha<input id="login-pass" type="password" autocomplete="current-password" required minlength="6" placeholder="mínimo de 6 caracteres"></label><button class="primary" id="email-go" type="submit">Entrar com e-mail</button><div class="eco40-login-alt"><button type="button" id="email-create">Criar conta</button><button type="button" id="email-reset">Esqueci a senha</button></div></form><div class="eco40-or"><span>ou</span></div><button class="gbtn" id="gate-go" disabled>${GLOGO} Entrar com Google</button>`:'<p class="muted">Modo local · progresso salvo neste navegador</p><button class="primary" id="local-go">Entrar no jogo</button>'}<p class="eco40-status" id="gate-st" role="status">${requiresAuth?'Conectando ao login…':''}</p></nav><span class="eco40-foot">XP 10× · OURO CONQUISTADO 10× · SALVAMENTO AUTOMÁTICO</span></main>`;
  const stEl=()=>$('gate-st');let started=false;const busy=v=>{for(const b of g.querySelectorAll('button'))if(!b.dataset.entry)b.disabled=v};const finish=()=>{g.remove();done();setTimeout(()=>{if(S){prepareState();tutorialRender()}},60)};const showVerify=u=>{started=false;FBX.user=u;busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-verify');if(!box){box=document.createElement('div');box.id='email-verify';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Confirme seu e-mail</h3><p>Enviamos um link de verificação para <b>${esc(u.email||'')}</b>. Abra o e-mail e clique no link. Sem essa confirmação, a conta não acessa os personagens.</p><button class="primary" id="verify-check">Já verifiquei</button><div class="eco40-login-alt"><button id="verify-resend">Reenviar e-mail</button><button id="verify-back">Usar outra conta</button></div>`;stEl().textContent='Verifique também o spam e o lixo eletrônico.';$('verify-check').onclick=async()=>{busy(true);stEl().textContent='Conferindo verificação…';try{await u.reload();if(u.emailVerified){const box=$('email-verify');if(box)box.remove();proceed(u)}else{busy(false);stEl().textContent='O e-mail ainda não foi verificado. Abra o link enviado e tente de novo.'}}catch(e){busy(false);stEl().textContent=authMsg(e)}};$('verify-resend').onclick=async()=>{busy(true);try{await u.sendEmailVerification();stEl().textContent='Novo e-mail de verificação enviado.'}catch(e){stEl().textContent=authMsg(e)}busy(false)};$('verify-back').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}location.reload()}};
- let userAct=false;try{userAct=sessionStorage.getItem('eco43act')==='1'}catch(e){}const markAct=()=>{userAct=true;try{sessionStorage.setItem('eco43act','1')}catch(e){}};const showResume=u=>{busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-resume');if(!box){box=document.createElement('div');box.id='email-resume';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Continuar com esta conta?</h3><p>Este navegador já está conectado como <b>${esc(u.email||u.displayName||'uma conta')}</b>.</p><button class="primary" id="resume-go">Continuar com esta conta</button><div class="eco40-login-alt"><button id="resume-other">Usar outra conta ou criar uma nova</button></div>`;stEl().textContent='';$('resume-go').onclick=()=>{markAct();box.remove();proceed(u)};$('resume-other').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}try{sessionStorage.removeItem('eco43act')}catch(e){}location.reload()}};
+ let userAct=false;try{userAct=Date.now()-(+sessionStorage.getItem('eco43act')||0)<120000}catch(e){}const markAct=()=>{userAct=true;try{sessionStorage.setItem('eco43act',String(Date.now()))}catch(e){}};const showResume=u=>{busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-resume');if(!box){box=document.createElement('div');box.id='email-resume';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Continuar com esta conta?</h3><p>Este navegador já está conectado como <b>${esc(u.email||u.displayName||'uma conta')}</b>.</p><button class="primary" id="resume-go">Continuar com esta conta</button><div class="eco40-login-alt"><button id="resume-other">Usar outra conta ou criar uma nova</button></div>`;stEl().textContent='';$('resume-go').onclick=()=>{markAct();box.remove();proceed(u)};$('resume-other').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}try{sessionStorage.removeItem('eco43act')}catch(e){}location.reload()}};
  const proceed=async u=>{if(started)return;try{sessionStorage.removeItem('eco43act')}catch(e){}const password=u.providerData&&u.providerData.some(x=>x.providerId==='password');if(password&&!u.emailVerified)return showVerify(u);started=true;FBX.user=u;busy(true);stEl().textContent=`Olá, ${u.displayName||u.email||'jogador'}! Sincronizando seus personagens…`;try{NET.cfg=netCfg();await netAuth();await cloudLinkFB()}catch(e){stEl().textContent='Aviso: '+(e.message||e)}finish()};
  g.querySelector('[data-entry="manual"]').onclick=()=>entryDialog('Mecânicas do jogo',manualHTML());if(!requiresAuth){$('local-go').onclick=finish;return}
  (async()=>{try{await loadJS(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`);await loadJS(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth-compat.js`);const c=netCfg(),authDomain=c.authDomain||(c.databaseURL.match(/https:\/\/([^.]+?)(-default-rtdb)?\./)||[])[1]+'.firebaseapp.com';if(!firebase.apps.length)firebase.initializeApp({apiKey:c.apiKey,authDomain,databaseURL:c.databaseURL});FBX.auth=firebase.auth();try{await FBX.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(e){}
@@ -5751,10 +5751,12 @@ try{
 // ---------- 3. janela Equipamento: mochila, quiver e slots vazios visíveis ----------
 try{
   eqHTML2=function(){
-    const cells=EQ2.map(([sl,lb,blank])=>{
+    const cells=EQ2.map(([sl0,lb,blank])=>{let sl=sl0;
       if(blank)return'<span></span>';
       if(sl==='mochila'){const n=Object.entries(S.bag||{}).filter(([id,q])=>q>0&&ITEMS[id]).length;
         return`<button data-a="open" data-v="inventario" class="eco43-bag" title="Mochila · ${n} tipo(s) de item"><img src="${icon('mochila')}" alt=""><span class="q">${n}</span></button>`}
+      if(sl==='escudo'&&typeof needAmmo==='function'&&needAmmo())sl='aljava';
+      else if(sl==='aljava'&&typeof needAmmo==='function'&&needAmmo())return'<span></span>';
       if(sl==='aljava'){const tp=typeof needAmmo==='function'?needAmmo():null;
         if(!tp)return`<button data-a="open" data-v="aljava" class="e" title="Quiver (sua arma atual não usa munição)"><img src="${ammoIcon('flecha')}" alt=""><span class="lb">quiver</span></button>`;
         const a=curAmmo(),left=a?(S.ammo[a]||0):0,nm=a?ITEMS[a].nome:(tp==='virote'?'Bolt':'Arrow');
@@ -5791,7 +5793,7 @@ try{
       else if(it.amm){
         const tp=typeof needAmmo==='function'?needAmmo():null,w=typeof weapon==='function'?weapon():null;
         const fits=tp===it.amm,nm=it.amm==='virote'?'crossbow':'bow';
-        html=`<div class="eco43-cmp"><b>Munição de ${nm}</b>${fits?`<span class="ok">✔ Compatível com ${esc(w.nome)}.</span>`:w&&tp?`<span class="no">✖ ${esc(w.nome)} usa ${tp==='virote'?'bolts':'arrows'}.</span>`:`<span class="eq">Equipe um ${nm} para usar.</span>`}<br><span class="eq">Cada ataque básico gasta 1 unidade.</span></div>`}
+        html=`<div class="eco43-cmp"><b>Munição de ${nm}</b>${fits?`<span class="ok">✔ Compatível com ${esc(w.nome)}.</span>`:w&&tp?`<span class="no">✖ ${esc(w.nome)} usa ${tp==='virote'?'bolts':'arrows'}.</span>`:`<span class="eq">Equipe um ${nm} para usar.</span>`}<br><span class="eq">Cada ataque básico gasta 1 unidade.</span>${it.aoe?'<br><span class="ok">Dano em área: também acerta alvos adjacentes.</span>':''}</div>`}
       if(!html)return;
       const cb=md.querySelector('[data-a="close"]'),last=cb&&cb.closest('.row');
       if(last)last.insertAdjacentHTML('beforebegin',html);else md.insertAdjacentHTML('beforeend',html);
@@ -5857,6 +5859,99 @@ window.eco43Outside=function(g,bw,bh){
     g.fillRect(0,0,bw,Math.max(0,Math.min(bh,Tp)));g.fillRect(0,Math.max(0,B),bw,Math.max(0,bh-B));
     const y1=Math.max(0,Tp),y2=Math.min(bh,B);if(y2>y1){g.fillRect(0,y1,Math.max(0,Math.min(bw,L)),y2-y1);g.fillRect(Math.max(0,R),y1,Math.max(0,bw-R),y2-y1)}
     g.restore()}catch(e){}};
+})();
+
+</script>
+<script id="eco44-js">
+// ===== v44: multiplayer mais estável, party (símbolo/analyzer), cap real, flechas de área, quiver, auras, gênero =====
+(function(){
+const st=document.createElement('style');st.textContent=`.eco44-tb{width:100%;border-collapse:collapse;font-size:.78rem}.eco44-tb th{color:#c9a24a;text-align:right;font-weight:700;padding:3px 4px;border-bottom:1px solid #333}.eco44-tb th:first-child,.eco44-tb td:first-child{text-align:left}.eco44-tb td{padding:4px;text-align:right;border-bottom:1px solid #222}.eco44-tb .pos{color:#5fd36b}.eco44-tb .neg{color:#ff7a6a}
+.eco44-au{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.eco44-au button{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px;background:#0f0d0a;border:1px solid var(--line2);border-radius:10px;color:#ddd;font-weight:700}.eco44-au button.on{border-color:var(--gold);background:#2a2113}.eco44-au small{color:#9a917e;font-weight:600}`;document.head.appendChild(st);
+
+// ---------- capacidade de verdade: equipamento e munição pesam; compras respeitam o limite ----------
+window.eco44Eq=()=>{try{let w=0;for(const sl in (S.eq||{})){const e=S.eq[sl];if(e&&e.id&&ITEMS[e.id])w+=weightOf(e.id)}for(const id in (S.ammo||{}))w+=(S.ammo[id]||0)*.1;return w}catch(e){return 0}};
+try{
+  const chk=(id,q)=>{const w=(ITEMS[id]&&ITEMS[id].amm?.1:weightOf(id))*q,cap=D().cap;if(bagWeight()+w>cap){toast(`Sem capacidade: ${fmtN(Math.round(bagWeight()))}/${fmtN(cap)} oz. Guarde itens no depósito ou venda o loot.`);return false}return true};
+  for(const k of ['buyeq','buyeq2','buyammo','buymat']){const f=ACT[k];if(!f)continue;
+    ACT[k]=function(v,n){const q=(k==='buyammo'||k==='buymat')?(+n||1):1;if(!chk(v,q))return;return f.apply(this,arguments)}}
+}catch(e){console.warn('eco44 cap',e)}
+
+// ---------- jogadores: movimento suave, sem atravessar, e recuperação quando o stream falha ----------
+try{
+  ghostsUpdate=function(){const now=performance.now(),dt=Math.min(.2,(now-ghT)/1000);ghT=now;
+    try{if(window._e44o&&Wd&&Wd.occ){for(const i of window._e44o)if(Wd.occ[i]===2)Wd.occ[i]=0}}catch(e){}window._e44o=[];
+    const z=zoneKey();GHOSTS=[];if(!z||!netOn())return;
+    for(const [uid,p] of netFresh()){if(p.z!==z)continue;
+      if(p.rx==null||isNaN(p.rx)||p._z!==p.z){p.rx=p.x;p.ry=p.y;p._z=p.z}
+      const dx=p.x-p.rx,dy=p.y-p.ry,dist=Math.hypot(dx,dy);
+      if(dist>7){p.rx=p.x;p.ry=p.y}else if(dist>.02){const sp=Math.min(dist,dt*(dist>2?9:5.4));p.rx+=dx/dist*sp;p.ry+=dy/dist*sp}
+      if(dist>.1)p._mt=now;p.moving=now-(p._mt||0)<200;GHOSTS.push(p);
+      try{if(Wd&&Wd.occ){const i=Math.round(p.y)*Wd.w+Math.round(p.x);if(i>=0&&!Wd.occ[i]){Wd.occ[i]=2;window._e44o.push(i)}}}catch(e){}}};
+  setInterval(async()=>{try{if(!S||!netOn())return;const r=await fetch(netURL('players'));if(!r.ok)return;const d=await r.json();if(!d)return;const now=Date.now();
+    for(const uid in d){const v=d[uid];if(!v||uid===NET.uid)continue;const o=NET.players[uid];
+      if(!o||now-(o._rt||0)>8000){const n=o||{};Object.assign(n,v);n._rt=now;if(n.rx==null||Math.abs(n.rx-n.x)>6||Math.abs(n.ry-n.y)>6||n._z!==n.z){n.rx=n.x;n.ry=n.y}n._z=n.z;NET.players[uid]=n}}
+    for(const uid in NET.players)if(uid!==NET.uid&&!(uid in d))delete NET.players[uid]}catch(e){}},9000);
+  setInterval(()=>{try{if(!S||!netOn())return;const es=NET.es;if(!es||es.readyState===2)netStream()}catch(e){}},12000);
+}catch(e){console.warn('eco44 net',e)}
+
+// ---------- party: símbolo, analyzer ----------
+try{
+  const _ns=netState;netState=function(){const o=_ns();if(S.party){const a=S.an||{};o.pa={xp:Math.round(a.xp||0),k:a.kills||0,lt:Math.round(a.loot||0),sp:Math.round(a.sup||0),t0:S.huntStart||0}}if(S.aura)o.au=S.aura;return o};
+  const mark=(label,sx,sy,leader)=>label(leader?'⭐':'🛡️',sx,sy,'#ffd24a',Math.round(11*DPR));
+  const _lg=labelGhosts;labelGhosts=function(label,bar){_lg.apply(this,arguments);
+    if(!S||!S.party)return;const lead=S.party.by;
+    for(const [uid,p] of netFresh()){if(!p.party||p.party.id!==S.party.id||p.z!==zoneKey())continue;const q=GHOSTS.find(g=>g===NET.players[uid]);if(!q)continue;
+      const sx=(q.rx*TS+16-8-CAM.x)*SCALE,sy=(q.ry*TS-CAM.y-8)*SCALE;if(sx<-80||sy<-80||sx>cv.width+80||sy>cv.height+80)continue;mark(label,sx,sy-(q.g?31:20)*DPR,uid===lead)}};
+  window.eco44Self=function(label,sx,sy){if(S&&S.party)mark(label,sx,sy-20*DPR,S.party.by===NET.uid)};
+  SHEETS.partyan=function(){if(!S.party)return['Party Analyzer','<p class="muted">Entre numa party para ver o analyzer.</p>'];
+    const now=Date.now(),rows=[];const a=S.an||{};
+    const me={n:S.nome,xp:a.xp||0,k:a.kills||0,lt:a.loot||0,sp:a.sup||0,t0:S.huntStart||now,self:1};rows.push(me);
+    for(const [uid,p] of netFresh())if(p.party&&p.party.id===S.party.id&&p.pa)rows.push({n:p.n,xp:p.pa.xp,k:p.pa.k,lt:p.pa.lt,sp:p.pa.sp,t0:p.pa.t0||now});
+    const tot=rows.reduce((s,r)=>s+r.lt-r.sp,0),avg=tot/rows.length;
+    const body=rows.map(r=>{const h=Math.max(.01,(now-(r.t0||now))/3600000),bal=Math.round((r.lt-r.sp)-avg);
+      return`<tr><td>${esc(r.n)}${r.self?' (você)':''}</td><td>${fmtK(Math.round(r.xp/h))}</td><td>${fmtN(r.k)}</td><td>${fmtK(r.lt)}</td><td>${fmtK(r.sp)}</td><td class="${bal>=0?'pos':'neg'}">${bal>=0?'+':''}${fmtK(bal)}</td></tr>`}).join('');
+    const txs=rows.filter(r=>(r.lt-r.sp)-avg>0).map(r=>`${esc(r.n)} paga`).length;
+    return['Party Analyzer',`<table class="eco44-tb"><tr><th>Membro</th><th>XP/h</th><th>Kills</th><th>Loot</th><th>Gastos</th><th>Saldo</th></tr>${body}</table><div class="row sp" style="margin-top:8px"><span class="muted">Lucro total (loot − gastos)</span><b class="gold">${fmtK(Math.round(tot))} gp</b></div><p class="muted" style="font-size:.76rem">Saldo positivo: sobra para repartir. Negativo: deve receber para igualar a divisão (${fmtK(Math.round(avg))} gp cada). Valores vêm da análise de cada jogador desde que começou a caçada.</p>`]};
+  const _sp=SHEETS.party;SHEETS.party=function(){const r=_sp();if(S.party)r[1]+=`<div class="row" style="margin-top:10px"><button class="btn pri" data-a="open" data-v="partyan">📊 Party Analyzer</button></div>`;return r};
+  setInterval(()=>{if(S&&UI.sheet==='partyan')renderSheet()},2000);
+}catch(e){console.warn('eco44 party',e)}
+
+// ---------- flechas/virotes de área (como burst arrow) ----------
+try{
+  for(const id of ['flecha_fogo','flecha_diam','virote_poder','virote_infernal'])if(ITEMS[id])ITEMS[id].aoe=1;
+  const _ba=baseAttack;baseAttack=function(d,t){const a=needAmmo()?curAmmo():null;const r=_ba.apply(this,arguments);
+    try{if(a&&ITEMS[a].aoe&&t&&t.x!=null&&Wd&&Wd.mobs){const raw=Math.max(1,Math.round((d.atk||10)*.55));for(const m of Wd.mobs.slice()){if(m===t||m.hp<=0||m.id==='boneco')continue;if(Math.abs(m.x-t.x)<=1&&Math.abs(m.y-t.y)<=1)dmgMob(m,raw,ITEMS[a].el||'phys',false)}}}catch(e){}return r};
+}catch(e){console.warn('eco44 aoe',e)}
+
+// ---------- auras (10 efeitos visuais grátis) ----------
+const AU=[['chamas','Aura de Chamas','rise',['#ff5a1a','#ffd24a']],['gelo','Aura Glacial','rise',['#9fe0ff','#ffffff']],['sagrada','Aura Sagrada','ring',['#ffe9a0','#fff8d8']],['sombra','Aura Sombria','rise',['#7a3ab0','#1a0a26']],['natureza','Aura da Natureza','orbit',['#5fe07a','#c8ff9a']],['trovao','Aura do Trovão','orbit',['#9fd0ff','#ffffff']],['sangue','Aura Rubra','ring',['#ff3a3a','#7a0a14']],['ouro','Aura Dourada','rise',['#ffd24a','#fff3b0']],['oceano','Aura Oceânica','orbit',['#3aa8ff','#aee8ff']],['cosmica','Aura Cósmica','orbit',['#ff5ad0','#7a8aff']]];
+window.eco44Aura=function(g,x,y,tt,id){const A=AU.find(a=>a[0]===id);if(!A)return;const [,,sty,c]=A;g.save();g.globalCompositeOperation='lighter';
+  if(sty==='ring'||id==='oceano'){const k=(tt*.8)%1;g.globalAlpha=.5*(1-k);g.strokeStyle=c[0];g.lineWidth=2;g.beginPath();g.ellipse(x,y,8+k*14,3+k*6,0,0,6.283);g.stroke()}
+  for(let i=0;i<12;i++){const ph=(tt*(sty==='rise'?.7:.5)+i/12)%1;let px,py;
+    if(sty==='rise'){const a=i*2.4;px=x+Math.cos(a)*9*(1-ph*.5);py=y-4-ph*34}else{const a=tt*(id==='trovao'?3:1.6)+i*.5236;px=x+Math.cos(a)*13;py=y-14+Math.sin(a)*5-Math.sin(tt*2+i)*3}
+    g.globalAlpha=sty==='rise'?.8*(1-ph):.8;g.fillStyle=c[i%2];const s=id==='trovao'&&i%3===0?3:2;g.fillRect(Math.round(px),Math.round(py),s,s)}
+  g.restore()};
+try{
+  const _dp=drawPlayer;drawPlayer=function(g,px,py,tt){const r=_dp.apply(this,arguments);try{if(S&&S.aura)eco44Aura(g,Math.round(px-CAM.x)+16,Math.round(py-CAM.y)+28,tt,S.aura)}catch(e){}return r};
+  const _dg=drawGhost;drawGhost=function(g,p,tt){_dg.apply(this,arguments);try{if(p.au)eco44Aura(g,Math.round(p.rx*TS)-CAM.x+16,Math.round(p.ry*TS)-CAM.y+28,tt,p.au)}catch(e){}};
+  SHEETS.auras=function(){const cur=S.aura||'';return['Auras',`<p class="muted" style="margin:0 0 8px">Efeitos visuais grátis. Outros jogadores online também veem a sua aura.</p><div class="eco44-au"><button data-a="setaura" data-v="" class="${cur?'':'on'}">Nenhuma<small>Sem efeito</small></button>${AU.map(a=>`<button data-a="setaura" data-v="${a[0]}" class="${cur===a[0]?'on':''}">${a[1]}<small>${a[2]==='rise'?'Partículas subindo':a[2]==='ring'?'Anel no chão':'Partículas orbitando'}</small></button>`).join('')}</div>`]};
+  ACT.setaura=v=>{S.aura=v||null;save();renderSheet();netSend(true)};
+  const _vis=SHEETS.visual;SHEETS.visual=function(){const r=_vis();r[1]+=`<div class="row" style="margin-top:10px"><button class="btn pri" data-a="open" data-v="auras">✨ Auras (10 grátis)</button></div>`;return r};
+  const _menu=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu();const d=document.createElement('div');d.innerHTML=b;const first=[...d.querySelectorAll('button.mi')].find(x=>x.dataset.v==='visual');
+    if(first){first.insertAdjacentHTML('afterend','<button class="mi" data-a="open" data-v="auras">✨ Auras</button>')}
+    if(S.party){const bt=d.querySelector('button.mi[data-a="openparty"]');if(bt)bt.insertAdjacentHTML('afterend','<button class="mi" data-a="open" data-v="partyan">📊 Party Analyzer</button>')}
+    return[t,d.innerHTML]};
+}catch(e){console.warn('eco44 aura',e)}
+
+// ---------- montarias e roupas especiais liberadas ----------
+setInterval(()=>{try{if(!S||S.free44)return;S.free44=1;S.mounts=S.mounts||{};for(const m of MOUNTS)S.mounts[m.id]=1;S.outs=S.outs||{};if(typeof OUT_SP!=='undefined')for(const id in OUT_SP)S.outs[id]=1;S.addons=S.addons||{};S.addons[1]=1;S.addons[2]=1;save();msg('Presente: todas as montarias, roupas especiais e 10 auras foram liberadas. Veja em Menu > Visual.','c-lv')}catch(e){}},1500);
+
+// ---------- gênero na criação do personagem ----------
+window.eco44Gender='m';
+new MutationObserver(()=>{const f=document.getElementById('createf40');if(!f||f.querySelector('#eco44-gen'))return;const v=f.querySelector('.vocs');if(!v)return;
+  v.insertAdjacentHTML('beforebegin',`<div id="eco44-gen" style="margin:8px 0"><span class="lbl">Gênero</span><div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="voc" data-g="m" aria-pressed="${window.eco44Gender==='m'}" style="min-height:44px;padding:8px 16px">♂ Homem</button><button type="button" class="voc" data-g="f" aria-pressed="${window.eco44Gender==='f'}" style="min-height:44px;padding:8px 16px">♀ Mulher</button></div></div>`);
+  f.querySelectorAll('#eco44-gen button').forEach(b=>b.onclick=ev=>{ev.preventDefault();ev.stopPropagation();window.eco44Gender=b.dataset.g;f.querySelectorAll('#eco44-gen button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))})}).observe(document.body,{childList:true,subtree:true});
+setInterval(()=>{if(S&&!S.gender&&S.lvl===1)S.gender=window.eco44Gender||'m'},800);
 })();
 
 </script>
