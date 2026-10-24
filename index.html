@@ -1070,6 +1070,7 @@ function update(dt){
   // monstros
   for(const m of Wd.mobs.slice()){
     if(m.hitT>0)m.hitT-=dt;
+    if(window.ECO_WORLD_CLIENT&&m.id!=='boneco'){if(m.p<1)continue;const c=cheb(m,Pl),rg=m.d.ranged||1;m.atkT-=dt;if(c<=rg&&m.atkT<=0){m.atkT=2;face(m,Pl.x-m.x,Pl.y-m.y);if(m.d.ranged&&c>1)hurtPlayer(m,true);else hurtPlayer(m,false);if(Wd!==W0)return}continue}
     if(m.p<1){m.p=Math.min(1,m.p+dt/m.dur);continue}
     if(m.id==='boneco')continue;
     const dd=Wd.dist[m.y*Wd.w+m.x],c=cheb(m,Pl),rg=m.d.ranged||1;
@@ -1083,7 +1084,7 @@ function update(dt){
   }
   if(!Wd||!S)return;
   // respawn
-  if(S.hunt>=0){Wd.spawnT-=dt;if(Wd.spawnT<=0){Wd.spawnT=2.5;if(Wd.mobs.length<HUNTS[S.hunt].max)spawnOne(false)}}
+  if(S.hunt>=0&&!window.ECO_WORLD_CLIENT){Wd.spawnT-=dt;if(Wd.spawnT<=0){Wd.spawnT=2.5;if(Wd.mobs.length<HUNTS[S.hunt].max)spawnOne(false)}}
   for(const a of [Wd.fx,Wd.txt,Wd.proj])for(let i=a.length-1;i>=0;i--){a[i].t+=dt;if(a[i].t>=a[i].dur)a.splice(i,1)}
   for(let i=Wd.corpses.length-1;i>=0;i--){Wd.corpses[i].t+=dt;if(Wd.corpses[i].t>8)Wd.corpses.splice(i,1)}
   stopCheck();
@@ -1591,7 +1592,7 @@ function draw(){
   for(const n of (Wd.npcs||[])){const nx=n.p<1?lerp(n.px,n.x,n.p):n.x,ny=n.p<1?lerp(n.py,n.y,n.p):n.y,sx=(nx*TS+16-8-CAM.x)*SCALE,sy=(ny*TS-CAM.y-8)*SCALE;if(sx>-80&&sx<cv.width+80&&sy>-80&&sy<cv.height+80)label(n.nome,sx,sy-6*DPR,'#5fe07a')}
   if(typeof labelGhosts==='function')labelGhosts(label,bar);
   for(const s of (Wd.signs||[])){const sx=(s.x*TS+16-CAM.x)*SCALE,sy=(s.y*TS-CAM.y)*SCALE;if(sx>-120&&sx<cv.width+120&&sy>-80&&sy<cv.height+80)label(s.t,sx,sy,'#ffe27a',Math.round(10*DPR))}
-  const psx=(px+16-8-CAM.x)*SCALE,psy=(py-CAM.y-8)*SCALE,d=D();if(window.eco44Self)try{eco44Self(label,psx,psy)}catch(e){}
+  const psx=(px+16-8-CAM.x)*SCALE,psy=(py-CAM.y-8)*SCALE,d=D();
   label(S.nome,psx,psy-8*DPR,hpCol(S.hp/d.hp));bar(psx,psy-5*DPR,S.hp/d.hp);
   if(Pl.word){ctx.globalAlpha=Pl.word.t>1?1-(Pl.word.t-1)/.4:1;label(Pl.word.s,psx,psy-22*DPR,'#ff9a2a');ctx.globalAlpha=1}
   for(const t of Wd.txt){const k=t.t/t.dur,sx=(t.x-8-CAM.x)*SCALE,sy=(t.y-8-CAM.y)*SCALE-k*30*DPR;ctx.globalAlpha=k>.7?1-(k-.7)/.3:1;label(t.s,sx,sy,t.col,t.big?fs*1.25:fs);ctx.globalAlpha=1}
@@ -1792,7 +1793,7 @@ const _baseSpawn=spawnOne;spawnOne=function(init){
     if(f>0){const k=1+.45*f;m.d=Object.assign({},m.d,{hp:Math.round(m.d.hp*k),hit:Math.round(m.d.hit*(1+.25*f)),xp:Math.round(m.d.xp*(1+.6*f)),gold:Math.round(m.d.gold*(1+.5*f)),nome:m.d.nome});m.hp=m.max=m.d.hp}}
 };
 const _baseRespawnTick=update;
-update=function(dt){_baseRespawnTick(dt);if(!S||!Wd||S.hunt<0)return;Wd.spawnT2=(Wd.spawnT2||0)-dt;if(Wd.spawnT2<=0){Wd.spawnT2=2.5;if(Wd.mobs.length<floorMax())spawnOne(false)}};
+update=function(dt){_baseRespawnTick(dt);if(!S||!Wd||S.hunt<0||window.ECO_WORLD_CLIENT)return;Wd.spawnT2=(Wd.spawnT2||0)-dt;if(Wd.spawnT2<=0){Wd.spawnT2=2.5;if(Wd.mobs.length<floorMax())spawnOne(false)}};
 
 // ===== Magias com efeito de verdade: ícones, ondas, propagação, brilho e tremor =====
 const SPI=new Image();let SPI_OK=false;const SPI_READY=new Promise(r=>{SPI.onload=()=>{SPI_OK=true;r()};SPI.onerror=()=>r();SPI.src=SPI_SRC});
@@ -2195,7 +2196,7 @@ const _fi=SHEETS.ficha;SHEETS.ficha=function(){const [t,b]=_fi(),d=D();return[t,
     if(Wd.theme==='town'){for(const b of (Wd.buildings||[])){cg.fillStyle='#8a7a66';cg.fillRect(b.x0,b.y0,b.x1-b.x0+1,b.y1-b.y0+1)}}
     for(const e of (Wd.exits||[]).concat(Wd.changes||[])){cg.fillStyle='#ffe27a';cg.fillRect(e.x,e.y,1,1)}base=c;cacheW=Wd}
   setInterval(()=>{if(!Wd||!S){mm.style.display='none';return}mm.style.display='';if(cacheW!==Wd)build();
-    const R=window.MM_R||20,s=240/(R*2+1);g.imageSmoothingEnabled=false;g.fillStyle=(Wd.theme==='town'||Wd.theme==='forest')?'#2a4d1f':'#000';g.fillRect(0,0,240,240);g.drawImage(base,Pl.x-R,Pl.y-R,R*2+1,R*2+1,0,0,240,240);
+    const R=window.MM_R||20,s=240/(R*2+1);g.imageSmoothingEnabled=false;g.fillStyle='#000';g.fillRect(0,0,240,240);g.drawImage(base,Pl.x-R,Pl.y-R,R*2+1,R*2+1,0,0,240,240);
     for(const m of Wd.mobs){if(Math.abs(m.x-Pl.x)>R||Math.abs(m.y-Pl.y)>R)continue;g.fillStyle=m.d.boss?'#ff3aff':'#ff3a2a';g.fillRect((m.x-Pl.x+R)*s,(m.y-Pl.y+R)*s,s,s)}
     for(const n of (Wd.npcs||[])){g.fillStyle='#ffe27a';g.fillRect((n.x-Pl.x+R)*s,(n.y-Pl.y+R)*s,s,s)}
     g.fillStyle='#fff';g.fillRect(R*s-1,R*s-1,s+2,s+2)},250);
@@ -2223,7 +2224,7 @@ ACT.equip=v=>{const it=ITEMS[v];
 // --- capacidade (peso) e depósito ---
 const WEIGHT={arma:60,armadura:120,elmo:40,calca:50,botas:30,escudo:80,anel:1,amuleto:5};
 const weightOf=id=>{const it=ITEMS[id];if(!it)return 0;if(it.slot)return WEIGHT[it.slot]||20;if(it.inf)return 0;return it.value>5000?3:.5};
-const bagWeight=()=>Object.entries(S.bag||{}).reduce((s,[id,n])=>s+weightOf(id)*n,0)+(window.eco44Eq?eco44Eq():0);
+const bagWeight=()=>Object.entries(S.bag||{}).reduce((s,[id,n])=>s+weightOf(id)*n,0);
 let capWarn=0;
 const _gainLoot3=gainLoot;gainLoot=function(id,n){
   if(ITEMS[id]&&!ITEMS[id].inf){const cap=D().cap,w=weightOf(id)*n;
@@ -5335,7 +5336,7 @@ function netStream(){if(NET.es){NET.es.close();NET.es=null}if(NET.esc){NET.esc.c
   es.onopen=()=>{NET.st='online';NET.err=''};es.onerror=()=>{if(NET.st==='online')NET.st='reconectando'};
   // chat global (últimas 30 mensagens)
   const ec=new EventSource(netURL('chat','orderBy=%22$key%22&limitToLast=30'));NET.esc=ec;
-  const addC=(k,m)=>{if(m&&m.pt&&typeof partySignal==='function')partySignal(k,m);if(!m||!m.m||NET.chat.some(x=>x.k===k))return;NET.chat.push({k,...m});NET.chat.sort((a,b)=>a.k<b.k?-1:1);if(NET.chat.length>60)NET.chat.shift();
+  const addC=(k,m)=>{if(m&&m.pt&&typeof partySignal==='function')partySignal(k,m);if(m&&m.pt&&typeof worldSignal==='function')worldSignal(k,m);if(!m||!m.m||NET.chat.some(x=>x.k===k))return;NET.chat.push({k,...m});NET.chat.sort((a,b)=>a.k<b.k?-1:1);if(NET.chat.length>60)NET.chat.shift();
     if(NET._chatReady&&m.u!==NET.uid&&typeof msg==='function')(!m.z||(m.z===zoneKey()&&Math.abs((m.x||0)-Pl.x)<=14&&Math.abs((m.y||0)-Pl.y)<=10))&&msg(`[${m.z?'Local':'Global'}] ${m.n}: ${m.m}`,'c-sys');if(UI&&UI.sheet==='online'&&(UI.sub||'')==='chat')renderSheet()};
   ec.addEventListener('put',e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}if(!d)return;if(d.path==='/'){for(const k in (d.data||{}))addC(k,d.data[k]);setTimeout(()=>NET._chatReady=1,500)}else addC(d.path.slice(1),d.data)})}
 // ---------- liga, mantém o login e envia a própria posição ----------
@@ -5440,10 +5441,10 @@ const gslug=s=>String(s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().r
 async function netGet(p,q){const r=await fetch(netURL(p,q));const j=await r.json();if(j&&j.error)throw new Error(j.error);return j}
 async function gLoadMine(){if(!netOn())return;try{const gid=await netGet('pguild/'+NET.uid);if(!gid){GUILD.gid=null;GUILD.name='';return}const g=await netGet('guilds/'+gid);const mem=await netGet('gmembers/'+gid)||{};
   if(!g||!mem[NET.uid]){await fetch(netURL('pguild/'+NET.uid),{method:'DELETE'});GUILD.gid=null;GUILD.name='';if(g)toast('Você não faz mais parte da guilda '+g.n+'.');return}
-  GUILD.gid=gid;GUILD.name=g.n;GUILD.owner=g.o;GUILD.members=mem;GUILD.t=Date.now()}catch(e){}}
-async function gLoadList(){try{const j=await netGet('guilds')||{};GUILD.list=Object.entries(j).map(([id,g])=>({id,...g})).sort((a,b)=>(a.n||'').localeCompare(b.n||''));if(UI.sheet==='online')renderSheet()}catch(e){GUILD.list=[]}}
+  GUILD.gid=gid;GUILD.name=g.n;GUILD.owner=g.o;GUILD.members=mem;GUILD.meta=g;GUILD.t=Date.now();if(UI.sheet==='guilda')renderSheet()}catch(e){}}
+async function gLoadList(){try{const j=await netGet('guilds')||{};GUILD.list=Object.entries(j).map(([id,g])=>({id,...g})).sort((a,b)=>(a.n||'').localeCompare(b.n||''));if(UI.sheet==='online'||UI.sheet==='guilda')renderSheet()}catch(e){GUILD.list=[]}}
 async function gChatLoad(){if(!GUILD.gid||!netOn())return;try{const j=await netGet('gchat/'+GUILD.gid,'orderBy=%22$key%22&limitToLast=30')||{};const L=Object.entries(j).map(([k,v])=>({k,...v})).sort((a,b)=>a.k<b.k?-1:1);
-  const nw=L.filter(m=>m.k>GUILD.lastK&&m.u!==NET.uid);if(GUILD.lastK&&nw.length)for(const m of nw)msg(`[Guilda] ${m.n}: ${m.m}`,'c-sys');GUILD.chat=L;if(L.length)GUILD.lastK=L[L.length-1].k;if(UI.sheet==='online'&&UI.sub==='guilda')renderSheet()}catch(e){}}
+  const nw=L.filter(m=>m.k>GUILD.lastK&&m.u!==NET.uid);if(GUILD.lastK&&nw.length)for(const m of nw)msg(`[Guilda] ${m.n}: ${m.m}`,'c-sys');GUILD.chat=L;if(L.length)GUILD.lastK=L[L.length-1].k;if((UI.sheet==='online'&&UI.sub==='guilda')||UI.sheet==='guilda')renderSheet()}catch(e){}}
 setInterval(()=>{if(netOn()&&GUILD.gid)gChatLoad()},8000);setInterval(()=>{if(netOn())gLoadMine()},60000);
 const _st23=netStart;netStart=async function(){await _st23();await gLoadMine();gChatLoad()};
 const GUILD_PRICE=50000;
@@ -5626,7 +5627,7 @@ const _menu41=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu41();return[t,
 function entryDialog(title,body){const old=document.querySelector('.eco40-dialog');if(old)old.remove();const d=document.createElement('div');d.className='eco40-dialog';d.innerHTML=`<section role="dialog" aria-modal="true" aria-label="${esc(title)}"><h2>${title}</h2>${body}<div class="actions"><button class="btn pri" data-entry-close>Voltar ao menu</button></div></section>`;document.body.appendChild(d);d.querySelector('[data-entry-close]').onclick=()=>d.remove()}
 function entryShow(requiresAuth,done){entryShow.presented=true;let g=$('gate');if(!g){g=document.createElement('div');g.id='gate';document.body.appendChild(g)}g.classList.add('eco40-gate');g.innerHTML=`<main class="eco40-entry"><section class="eco40-brand"><p class="eyebrow">Um RPG online de exploração e evolução</p><h1>Eco das<br>Cavernas</h1><p>Explore terras esquecidas, enfrente criaturas, construa seu personagem e encontre outros aventureiros.</p><button class="eco40-manual" data-entry="manual">Mecânicas do jogo <span>Conheça o mundo, as classes e todas as mecânicas</span></button></section><nav class="eco40-menu" aria-label="Entrar no jogo"><p class="eco40-menu-label">Entrar no jogo</p>${requiresAuth?`<form class="eco40-login" id="email-login"><label>E-mail<input id="login-email" type="email" autocomplete="email" required placeholder="seu@email.com"></label><label>Senha<input id="login-pass" type="password" autocomplete="current-password" required minlength="6" placeholder="mínimo de 6 caracteres"></label><button class="primary" id="email-go" type="submit">Entrar com e-mail</button><div class="eco40-login-alt"><button type="button" id="email-create">Criar conta</button><button type="button" id="email-reset">Esqueci a senha</button></div></form><div class="eco40-or"><span>ou</span></div><button class="gbtn" id="gate-go" disabled>${GLOGO} Entrar com Google</button>`:'<p class="muted">Modo local · progresso salvo neste navegador</p><button class="primary" id="local-go">Entrar no jogo</button>'}<p class="eco40-status" id="gate-st" role="status">${requiresAuth?'Conectando ao login…':''}</p></nav><span class="eco40-foot">XP 10× · OURO CONQUISTADO 10× · SALVAMENTO AUTOMÁTICO</span></main>`;
  const stEl=()=>$('gate-st');let started=false;const busy=v=>{for(const b of g.querySelectorAll('button'))if(!b.dataset.entry)b.disabled=v};const finish=()=>{g.remove();done();setTimeout(()=>{if(S){prepareState();tutorialRender()}},60)};const showVerify=u=>{started=false;FBX.user=u;busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-verify');if(!box){box=document.createElement('div');box.id='email-verify';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Confirme seu e-mail</h3><p>Enviamos um link de verificação para <b>${esc(u.email||'')}</b>. Abra o e-mail e clique no link. Sem essa confirmação, a conta não acessa os personagens.</p><button class="primary" id="verify-check">Já verifiquei</button><div class="eco40-login-alt"><button id="verify-resend">Reenviar e-mail</button><button id="verify-back">Usar outra conta</button></div>`;stEl().textContent='Verifique também o spam e o lixo eletrônico.';$('verify-check').onclick=async()=>{busy(true);stEl().textContent='Conferindo verificação…';try{await u.reload();if(u.emailVerified){const box=$('email-verify');if(box)box.remove();proceed(u)}else{busy(false);stEl().textContent='O e-mail ainda não foi verificado. Abra o link enviado e tente de novo.'}}catch(e){busy(false);stEl().textContent=authMsg(e)}};$('verify-resend').onclick=async()=>{busy(true);try{await u.sendEmailVerification();stEl().textContent='Novo e-mail de verificação enviado.'}catch(e){stEl().textContent=authMsg(e)}busy(false)};$('verify-back').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}location.reload()}};
- let userAct=false;try{userAct=Date.now()-(+sessionStorage.getItem('eco43act')||0)<120000}catch(e){}const markAct=()=>{userAct=true;try{sessionStorage.setItem('eco43act',String(Date.now()))}catch(e){}};const showResume=u=>{busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-resume');if(!box){box=document.createElement('div');box.id='email-resume';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Continuar com esta conta?</h3><p>Este navegador já está conectado como <b>${esc(u.email||u.displayName||'uma conta')}</b>.</p><button class="primary" id="resume-go">Continuar com esta conta</button><div class="eco40-login-alt"><button id="resume-other">Usar outra conta ou criar uma nova</button></div>`;stEl().textContent='';$('resume-go').onclick=()=>{markAct();box.remove();proceed(u)};$('resume-other').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}try{sessionStorage.removeItem('eco43act')}catch(e){}location.reload()}};
+ let userAct=false;try{userAct=sessionStorage.getItem('eco43act')==='1'}catch(e){}const markAct=()=>{userAct=true;try{sessionStorage.setItem('eco43act','1')}catch(e){}};const showResume=u=>{busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-resume');if(!box){box=document.createElement('div');box.id='email-resume';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Continuar com esta conta?</h3><p>Este navegador já está conectado como <b>${esc(u.email||u.displayName||'uma conta')}</b>.</p><button class="primary" id="resume-go">Continuar com esta conta</button><div class="eco40-login-alt"><button id="resume-other">Usar outra conta ou criar uma nova</button></div>`;stEl().textContent='';$('resume-go').onclick=()=>{markAct();box.remove();proceed(u)};$('resume-other').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}try{sessionStorage.removeItem('eco43act')}catch(e){}location.reload()}};
  const proceed=async u=>{if(started)return;try{sessionStorage.removeItem('eco43act')}catch(e){}const password=u.providerData&&u.providerData.some(x=>x.providerId==='password');if(password&&!u.emailVerified)return showVerify(u);started=true;FBX.user=u;busy(true);stEl().textContent=`Olá, ${u.displayName||u.email||'jogador'}! Sincronizando seus personagens…`;try{NET.cfg=netCfg();await netAuth();await cloudLinkFB()}catch(e){stEl().textContent='Aviso: '+(e.message||e)}finish()};
  g.querySelector('[data-entry="manual"]').onclick=()=>entryDialog('Mecânicas do jogo',manualHTML());if(!requiresAuth){$('local-go').onclick=finish;return}
  (async()=>{try{await loadJS(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`);await loadJS(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth-compat.js`);const c=netCfg(),authDomain=c.authDomain||(c.databaseURL.match(/https:\/\/([^.]+?)(-default-rtdb)?\./)||[])[1]+'.firebaseapp.com';if(!firebase.apps.length)firebase.initializeApp({apiKey:c.apiKey,authDomain,databaseURL:c.databaseURL});FBX.auth=firebase.auth();try{await FBX.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(e){}
@@ -5751,12 +5752,10 @@ try{
 // ---------- 3. janela Equipamento: mochila, quiver e slots vazios visíveis ----------
 try{
   eqHTML2=function(){
-    const cells=EQ2.map(([sl0,lb,blank])=>{let sl=sl0;
+    const cells=EQ2.map(([sl,lb,blank])=>{
       if(blank)return'<span></span>';
       if(sl==='mochila'){const n=Object.entries(S.bag||{}).filter(([id,q])=>q>0&&ITEMS[id]).length;
         return`<button data-a="open" data-v="inventario" class="eco43-bag" title="Mochila · ${n} tipo(s) de item"><img src="${icon('mochila')}" alt=""><span class="q">${n}</span></button>`}
-      if(sl==='escudo'&&typeof needAmmo==='function'&&needAmmo())sl='aljava';
-      else if(sl==='aljava'&&typeof needAmmo==='function'&&needAmmo())return'<span></span>';
       if(sl==='aljava'){const tp=typeof needAmmo==='function'?needAmmo():null;
         if(!tp)return`<button data-a="open" data-v="aljava" class="e" title="Quiver (sua arma atual não usa munição)"><img src="${ammoIcon('flecha')}" alt=""><span class="lb">quiver</span></button>`;
         const a=curAmmo(),left=a?(S.ammo[a]||0):0,nm=a?ITEMS[a].nome:(tp==='virote'?'Bolt':'Arrow');
@@ -5793,7 +5792,7 @@ try{
       else if(it.amm){
         const tp=typeof needAmmo==='function'?needAmmo():null,w=typeof weapon==='function'?weapon():null;
         const fits=tp===it.amm,nm=it.amm==='virote'?'crossbow':'bow';
-        html=`<div class="eco43-cmp"><b>Munição de ${nm}</b>${fits?`<span class="ok">✔ Compatível com ${esc(w.nome)}.</span>`:w&&tp?`<span class="no">✖ ${esc(w.nome)} usa ${tp==='virote'?'bolts':'arrows'}.</span>`:`<span class="eq">Equipe um ${nm} para usar.</span>`}<br><span class="eq">Cada ataque básico gasta 1 unidade.</span>${it.aoe?'<br><span class="ok">Dano em área: também acerta alvos adjacentes.</span>':''}</div>`}
+        html=`<div class="eco43-cmp"><b>Munição de ${nm}</b>${fits?`<span class="ok">✔ Compatível com ${esc(w.nome)}.</span>`:w&&tp?`<span class="no">✖ ${esc(w.nome)} usa ${tp==='virote'?'bolts':'arrows'}.</span>`:`<span class="eq">Equipe um ${nm} para usar.</span>`}<br><span class="eq">Cada ataque básico gasta 1 unidade.</span></div>`}
       if(!html)return;
       const cb=md.querySelector('[data-a="close"]'),last=cb&&cb.closest('.row');
       if(last)last.insertAdjacentHTML('beforebegin',html);else md.insertAdjacentHTML('beforeend',html);
@@ -5862,96 +5861,82 @@ window.eco43Outside=function(g,bw,bh){
 })();
 
 </script>
+
+<style id="eco44-css">
+.eco44-boss{text-align:center}.eco44-boss-icon img{width:96px;height:96px;image-rendering:pixelated;filter:drop-shadow(0 0 18px #b32b1c)}.eco44-boss h3{font-size:1.1rem!important;color:#e2bd75!important}.eco44-boss .kv{margin:6px 0}.eco44-boss .btn{margin-top:12px}.eco44-gchat{max-height:180px;overflow:auto;padding:7px;background:#141510}.eco44-gchat div{padding:3px;border-bottom:1px solid #ffffff0c}.grid.g2 button{min-height:42px}textarea.txt{min-height:70px;resize:vertical}
+</style>
 <script id="eco44-js">
-// ===== v44: multiplayer mais estável, party (símbolo/analyzer), cap real, flechas de área, quiver, auras, gênero =====
-(function(){
-const st=document.createElement('style');st.textContent=`.eco44-tb{width:100%;border-collapse:collapse;font-size:.78rem}.eco44-tb th{color:#c9a24a;text-align:right;font-weight:700;padding:3px 4px;border-bottom:1px solid #333}.eco44-tb th:first-child,.eco44-tb td:first-child{text-align:left}.eco44-tb td{padding:4px;text-align:right;border-bottom:1px solid #222}.eco44-tb .pos{color:#5fd36b}.eco44-tb .neg{color:#ff7a6a}
-.eco44-au{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.eco44-au button{display:flex;flex-direction:column;gap:2px;align-items:flex-start;text-align:left;padding:10px;background:#0f0d0a;border:1px solid var(--line2);border-radius:10px;color:#ddd;font-weight:700}.eco44-au button.on{border-color:var(--gold);background:#2a2113}.eco44-au small{color:#9a917e;font-weight:600}`;document.head.appendChild(st);
 
-// ---------- capacidade de verdade: equipamento e munição pesam; compras respeitam o limite ----------
-window.eco44Eq=()=>{try{let w=0;for(const sl in (S.eq||{})){const e=S.eq[sl];if(e&&e.id&&ITEMS[e.id])w+=weightOf(e.id)}for(const id in (S.ammo||{}))w+=(S.ammo[id]||0)*.1;return w}catch(e){return 0}};
-try{
-  const chk=(id,q)=>{const w=(ITEMS[id]&&ITEMS[id].amm?.1:weightOf(id))*q,cap=D().cap;if(bagWeight()+w>cap){toast(`Sem capacidade: ${fmtN(Math.round(bagWeight()))}/${fmtN(cap)} oz. Guarde itens no depósito ou venda o loot.`);return false}return true};
-  for(const k of ['buyeq','buyeq2','buyammo','buymat']){const f=ACT[k];if(!f)continue;
-    ACT[k]=function(v,n){const q=(k==='buyammo'||k==='buymat')?(+n||1):1;if(!chk(v,q))return;return f.apply(this,arguments)}}
-}catch(e){console.warn('eco44 cap',e)}
+// ===== v44: Guilda independente, mundo compartilhado, boss global, GOD e trainers =====
+const WORLD={host:null,zone:'',last:null,seen:new Set(),hits:[],dead:{},forced:0,bossT:0};
+const BOSS_INFO=BOSSES[BOSSES.length-1],BOSS_HUNT=BOSS_INFO.hunt,BOSS_PERIOD=7200000;
+const bossWindow=()=>WORLD.forced||Math.floor(Date.now()/BOSS_PERIOD);
+const bossNext=()=>(Math.floor(Date.now()/BOSS_PERIOD)+1)*BOSS_PERIOD;
+function worldSeen(k){if(WORLD.seen.has(k))return false;WORLD.seen.add(k);if(WORLD.seen.size>500)WORLD.seen.delete(WORLD.seen.values().next().value);return true}
+function worldSend(o){if(!netOn())return;try{fetch(netURL('chat'),{method:'POST',body:JSON.stringify({u:NET.uid,n:String(S.nome).slice(0,20),m:'',t:{'.sv':'timestamp'},...o})}).catch(()=>{})}catch(e){}}
+function worldHostCandidates(z){return[[NET.uid,{n:S.nome}],...netFresh().filter(([u,p])=>p.z===z)].sort((a,b)=>a[0]<b[0]?-1:1)}
+function worldMobSnapshot(){return Wd.mobs.filter(m=>m.id!=='boneco').map(m=>{if(!m._wid)m._wid=NET.uid+'_'+(WORLD.seq=(WORLD.seq||0)+1);return{w:m._wid,id:m.id,x:m.x,y:m.y,di:m.dir,hp:m.hp,max:m.max,d:m.globalBoss?m.d:0,g:m.globalBoss||0}})}
+function worldApplySnapshot(snap){if(!snap||!Wd||snap.z!==zoneKey())return;WORLD.last=snap;const old=new Map(Wd.mobs.map(m=>[m._wid,m]));const arr=[];for(const w of snap.mobs||[]){let m=old.get(w.w);if(!m){m={_wid:w.w,id:w.id,d:w.d||MOBS[w.id],x:w.x,y:w.y,px:w.x,py:w.y,p:1,dir:w.di||'S',dur:.45,hp:w.hp,max:w.max,atkT:1,wT:2,hitT:0,contrib:w.c||{},globalBoss:w.g||0}}else{if(m.x!==w.x||m.y!==w.y){m.px=m.x;m.py=m.y;m.x=w.x;m.y=w.y;m.p=0;m.dur=.45}m.d=w.d||MOBS[w.id];m.hp=w.hp;m.max=w.max;m.dir=w.di||m.dir;m.globalBoss=w.g||0}arr.push(m)}Wd.mobs=arr;Wd.occ.fill(0);Wd.occ[Pl.y*Wd.w+Pl.x]=1;for(const m of arr)if(Wd.occ[m.y*Wd.w+m.x]!==undefined)Wd.occ[m.y*Wd.w+m.x]=1;if(Pl.target&&!arr.includes(Pl.target))Pl.target=null}
+function worldTick(){if(!S||!Wd||!netOn()||S.hunt<0){window.ECO_WORLD_CLIENT=false;WORLD.host=null;return}const z=zoneKey(),cs=worldHostCandidates(z),pubs=cs.filter(([u,p])=>p&&p.world&&p.world.z===z),host=(pubs.length?pubs:cs)[0][0],prev=WORLD.host;WORLD.host=host;WORLD.zone=z;if(host===NET.uid){window.ECO_WORLD_CLIENT=false;if(prev&&prev!==NET.uid&&WORLD.last&&WORLD.last.z===z)worldApplySnapshot(WORLD.last);ensureGlobalBoss()}else{window.ECO_WORLD_CLIENT=true;const p=NET.players[host];if(p&&p.world&&p.world.z===z)worldApplySnapshot(p.world)}}
+function worldFlushHits(){if(!WORLD.hits.length||WORLD.host===NET.uid||!netOn())return;const hits=WORLD.hits.splice(0,20);worldSend({pt:'worldHit',to:WORLD.host,z:zoneKey(),hits})}
+setInterval(worldTick,450);setInterval(worldFlushHits,220);
+const _loadWorld44=loadWorld;loadWorld=function(){const r=_loadWorld44.apply(this,arguments);WORLD.host=null;WORLD.last=null;window.ECO_WORLD_CLIENT=false;return r};
+const _netState44=netState;netState=function(){const o=_netState44();if(S&&Wd&&S.hunt>=0&&WORLD.host===NET.uid&&WORLD.zone===zoneKey())o.world={z:WORLD.zone,mobs:worldMobSnapshot()};const bw=bossWindow();if(WORLD.dead[bw])o.bossDead=bw;return o};
+const _dmgMob44=dmgMob;dmgMob=function(m,raw,el,crit){if(S.hunt>=0&&window.ECO_WORLD_CLIENT&&m.id!=='boneco'){if(m._wid)WORLD.hits.push({w:m._wid,raw,el,crit:!!crit});return}if(S.hunt>=0&&WORLD.host===NET.uid&&m._wid){m.contrib=m.contrib||{};m.contrib[NET.uid]=(m.contrib[NET.uid]||0)+Math.max(1,Math.round(raw||0))}return _dmgMob44(m,raw,el,crit)};
+const _cast44=cast;cast=function(sp,manual){const r=_cast44(sp,manual);if(r&&sp&&netOn()){const t=Pl.target;worldSend({pt:'worldSpell',z:zoneKey(),x:Pl.x,y:Pl.y,tx:t?t.x:Pl.x,ty:t?t.y:Pl.y,nome:sp.nome,w:sp.w,el:sp.el||'phys',tipo:sp.t,r:sp.r||1})}return r};
+function bossReward(){const gold=250000;S.gold+=gold*10;for(const [id,n] of [['bolsa_gema',5],['gema',10],['pot_inf_hp',20],['pot_inf_mp',20]]){if(ITEMS[id])S.bag[id]=(S.bag[id]||0)+n}const rare='raro_'+BOSSES.indexOf(BOSS_INFO);if(ITEMS[rare])S.bag[rare]=(S.bag[rare]||0)+1;save();modal(`<h2>Chefe Global derrotado!</h2><p>Você recebeu <b>2.500.000 gp</b>, gemas, suprimentos e um item raro do chefe.</p><button class="btn pri" data-a="close">Continuar</button>`)}
+const _killMob44=killMob;killMob=function(m){const shared=S.hunt>=0&&WORLD.host===NET.uid&&m._wid,con=shared?Object.assign({},m.contrib):null,x=m.x,y=m.y,id=m.id,xp=m.d.xp,gp=m.d.gold,g=m.globalBoss,r=_killMob44(m);if(shared){const parts=Object.keys(con||{});for(const uid of parts)if(uid!==NET.uid)worldSend({pt:'worldKill',to:uid,z:zoneKey(),x,y,id,xp:Math.max(1,Math.round((xp||1)*(con[uid]||1)/Math.max(1,Object.values(con).reduce((a,b)=>a+b,0)))),gold:Math.round(Math.random()*(gp||0)),boss:g||0});if(g){WORLD.dead[g]=1;worldSend({pt:'worldBossDead',g});if(con[NET.uid])bossReward();netSend(true)}}return r};
+function ensureGlobalBoss(){if(S.hunt!==BOSS_HUNT||WORLD.host!==NET.uid)return;const g=bossWindow();if(WORLD.dead[g])return;for(const m of Wd.mobs.slice())if(m.d.boss&&!m.globalBoss){Wd.mobs.splice(Wd.mobs.indexOf(m),1)}if(Wd.mobs.some(m=>m.globalBoss===g))return;let x=Pl.x+3,y=Pl.y;for(let r=2;r<10;r++){let found=false;for(let dy=-r;dy<=r&&!found;dy++)for(let dx=-r;dx<=r&&!found;dx++){if(free(Pl.x+dx,Pl.y+dy)){x=Pl.x+dx;y=Pl.y+dy;found=true}}if(found)break}const m=addMob(BOSS_INFO.id,x,y),d=Object.assign({},MOBS[BOSS_INFO.id]);d.nome='Ancião do Vazio Global';d.hp=Math.round(d.hp*20);d.hit=Math.round(d.hit*2);d.arm=Math.round(d.arm*2);d.xp=Math.round(d.xp*20);d.gold=Math.round(d.gold*50);m.d=d;m.hp=m.max=d.hp;m.globalBoss=g;m._wid='global_'+g;m.contrib={};toast('O CHEFE GLOBAL está na arena!');msg('O Chefe Global apareceu. Reúna outros jogadores!','c-bad')}
+async function bossLoad(){if(!netOn())return;try{const r=await fetch(netURL('chat','orderBy=%22pt%22&equalTo=%22worldBossDead%22&limitToLast=20')),j=await r.json();for(const m of Object.values(j||{}))if(m&&m.g)WORLD.dead[m.g]=1;if(UI.sheet==='worldboss')renderSheet()}catch(e){}}
+setInterval(()=>{if(netOn())bossLoad();if(UI.sheet==='worldboss')renderSheet()},30000);setInterval(()=>{if(UI.sheet==='worldboss')renderSheet()},1000);
+const _netStart44=netStart;netStart=async function(){const r=await _netStart44();bossLoad();return r};
+window.worldSignal=function(k,m){if(!m||m.u===NET.uid||!worldSeen(k))return;if(m.t&&Date.now()-m.t>15000&&['worldHit','worldSpell','worldKill','adminBoss','adminKick'].includes(m.pt))return;if(m.g&&m.pt==='worldBossDead'){WORLD.dead[m.g]=1;if(UI.sheet==='worldboss')renderSheet();return}if(m.pt==='worldHit'&&m.to===NET.uid&&WORLD.host===NET.uid){for(const h of m.hits||[]){const mob=Wd.mobs.find(x=>x._wid===h.w);if(!mob)continue;mob.contrib=mob.contrib||{};mob.contrib[m.u]=(mob.contrib[m.u]||0)+Math.max(1,Math.round(h.raw||0));_dmgMob44(mob,h.raw,h.el,h.crit)}return}if(m.z&&m.z!==zoneKey())return;
+ if(m.pt==='worldSpell'){floatT(m.x,m.y-1,m.w||m.nome||'magia',(EL[m.el]||EL.phys)[1]);if(m.tipo==='hit'||m.tipo==='beam')Wd.proj.push({x0:m.x,y0:m.y,x1:m.tx,y1:m.ty,t:0,dur:.3,col:(EL[m.el]||EL.phys)[1]});else if(m.tipo==='aoe'||m.tipo==='wave'){const r=m.r||2;for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++)if(x*x+y*y<=r*r+1)fx(m.x+x,m.y+y,'area',m.el)}else fx(m.tipo==='area'?m.tx:m.x,m.tipo==='area'?m.ty:m.y,'area',m.el);return}
+ if(m.pt==='worldKill'){if(Wd&&!Wd.corpses.some(c=>c.x===m.x&&c.y===m.y&&c.id===m.id))Wd.corpses.push({x:m.x,y:m.y,id:m.id,t:0});if(m.to===NET.uid){gainExp(m.xp||0);if(m.gold){S.gold+=m.gold*10;msg(`Loot compartilhado: ${fmtN(m.gold*10)} gp.`,'c-loot')}if(m.boss)bossReward();save()}return}
+ if(m.pt==='adminBoss'&&isGodUID(m.u,m)){WORLD.forced=m.g;WORLD.dead[m.g]=0;toast('CHAR GOD invocou o Chefe Global!');worldTick();return}
+ if(m.pt==='adminKick'&&m.to===NET.uid&&isGodUID(m.u,m)){toast('CHAR GOD removeu você da área.');goTemple();return}};
 
-// ---------- jogadores: movimento suave, sem atravessar, e recuperação quando o stream falha ----------
-try{
-  ghostsUpdate=function(){const now=performance.now(),dt=Math.min(.2,(now-ghT)/1000);ghT=now;
-    try{if(window._e44o&&Wd&&Wd.occ){for(const i of window._e44o)if(Wd.occ[i]===2)Wd.occ[i]=0}}catch(e){}window._e44o=[];
-    const z=zoneKey();GHOSTS=[];if(!z||!netOn())return;
-    for(const [uid,p] of netFresh()){if(p.z!==z)continue;
-      if(p.rx==null||isNaN(p.rx)||p._z!==p.z){p.rx=p.x;p.ry=p.y;p._z=p.z}
-      const dx=p.x-p.rx,dy=p.y-p.ry,dist=Math.hypot(dx,dy);
-      if(dist>7){p.rx=p.x;p.ry=p.y}else if(dist>.02){const sp=Math.min(dist,dt*(dist>2?9:5.4));p.rx+=dx/dist*sp;p.ry+=dy/dist*sp}
-      if(dist>.1)p._mt=now;p.moving=now-(p._mt||0)<200;GHOSTS.push(p);
-      try{if(Wd&&Wd.occ){const i=Math.round(p.y)*Wd.w+Math.round(p.x);if(i>=0&&!Wd.occ[i]){Wd.occ[i]=2;window._e44o.push(i)}}}catch(e){}}};
-  setInterval(async()=>{try{if(!S||!netOn())return;const r=await fetch(netURL('players'));if(!r.ok)return;const d=await r.json();if(!d)return;const now=Date.now();
-    for(const uid in d){const v=d[uid];if(!v||uid===NET.uid)continue;const o=NET.players[uid];
-      if(!o||now-(o._rt||0)>8000){const n=o||{};Object.assign(n,v);n._rt=now;if(n.rx==null||Math.abs(n.rx-n.x)>6||Math.abs(n.ry-n.y)>6||n._z!==n.z){n.rx=n.x;n.ry=n.y}n._z=n.z;NET.players[uid]=n}}
-    for(const uid in NET.players)if(uid!==NET.uid&&!(uid in d))delete NET.players[uid]}catch(e){}},9000);
-  setInterval(()=>{try{if(!S||!netOn())return;const es=NET.es;if(!es||es.readyState===2)netStream()}catch(e){}},12000);
-}catch(e){console.warn('eco44 net',e)}
+// ---------- Chefe Global na interface ----------
+SHEETS.worldboss=function(){const g=bossWindow(),dead=!!WORLD.dead[g],left=bossNext()-Date.now(),here=S.hunt===BOSS_HUNT;return['Chefe Global',`<div class="eco44-boss"><div class="eco44-boss-icon"><img src="${mobURL(BOSS_INFO.id)}" alt=""></div><h3>Ancião do Vazio Global</h3><p>Um chefe único para todos os jogadores, com vida e poder extremos. A arena é compartilhada: todos veem o mesmo chefe e as magias dos aliados.</p><div class="kv"><span>Estado</span><b class="${dead?'bad':'ok'}">${dead?'Derrotado neste ciclo':'Ativo neste ciclo'}</b></div><div class="kv"><span>Próximo ciclo</span><b>${fmtT(Math.max(0,left)/1000)}</b></div><div class="kv"><span>Recompensas</span><b>2,5 mi gp + gemas + item raro</b></div><button class="btn pri" data-a="bossgo" ${dead?'disabled':''}>${here?'Você está na arena':dead?'Aguarde o próximo chefe':'Entrar na arena do chefe'}</button><p class="muted">Novo chefe a cada 2 horas. Leve uma party: ele foi criado para ser muito forte.</p></div>`]};
+ACT.bossgo=()=>{if(WORLD.dead[bossWindow()])return toast('O chefe deste ciclo já foi derrotado.');WORLD.enterBoss=true;startHunt(BOSS_HUNT);WORLD.enterBoss=false;setTimeout(worldTick,80)};
+ACT.openboss=()=>{openSheet('worldboss');bossLoad()};
 
-// ---------- party: símbolo, analyzer ----------
-try{
-  const _ns=netState;netState=function(){const o=_ns();if(S.party){const a=S.an||{};o.pa={xp:Math.round(a.xp||0),k:a.kills||0,lt:Math.round(a.loot||0),sp:Math.round(a.sup||0),t0:S.huntStart||0}}if(S.aura)o.au=S.aura;return o};
-  const mark=(label,sx,sy,leader)=>label(leader?'⭐':'🛡️',sx,sy,'#ffd24a',Math.round(11*DPR));
-  const _lg=labelGhosts;labelGhosts=function(label,bar){_lg.apply(this,arguments);
-    if(!S||!S.party)return;const lead=S.party.by;
-    for(const [uid,p] of netFresh()){if(!p.party||p.party.id!==S.party.id||p.z!==zoneKey())continue;const q=GHOSTS.find(g=>g===NET.players[uid]);if(!q)continue;
-      const sx=(q.rx*TS+16-8-CAM.x)*SCALE,sy=(q.ry*TS-CAM.y-8)*SCALE;if(sx<-80||sy<-80||sx>cv.width+80||sy>cv.height+80)continue;mark(label,sx,sy-(q.g?31:20)*DPR,uid===lead)}};
-  window.eco44Self=function(label,sx,sy){if(S&&S.party)mark(label,sx,sy-20*DPR,S.party.by===NET.uid)};
-  SHEETS.partyan=function(){if(!S.party)return['Party Analyzer','<p class="muted">Entre numa party para ver o analyzer.</p>'];
-    const now=Date.now(),rows=[];const a=S.an||{};
-    const me={n:S.nome,xp:a.xp||0,k:a.kills||0,lt:a.loot||0,sp:a.sup||0,t0:S.huntStart||now,self:1};rows.push(me);
-    for(const [uid,p] of netFresh())if(p.party&&p.party.id===S.party.id&&p.pa)rows.push({n:p.n,xp:p.pa.xp,k:p.pa.k,lt:p.pa.lt,sp:p.pa.sp,t0:p.pa.t0||now});
-    const tot=rows.reduce((s,r)=>s+r.lt-r.sp,0),avg=tot/rows.length;
-    const body=rows.map(r=>{const h=Math.max(.01,(now-(r.t0||now))/3600000),bal=Math.round((r.lt-r.sp)-avg);
-      return`<tr><td>${esc(r.n)}${r.self?' (você)':''}</td><td>${fmtK(Math.round(r.xp/h))}</td><td>${fmtN(r.k)}</td><td>${fmtK(r.lt)}</td><td>${fmtK(r.sp)}</td><td class="${bal>=0?'pos':'neg'}">${bal>=0?'+':''}${fmtK(bal)}</td></tr>`}).join('');
-    const txs=rows.filter(r=>(r.lt-r.sp)-avg>0).map(r=>`${esc(r.n)} paga`).length;
-    return['Party Analyzer',`<table class="eco44-tb"><tr><th>Membro</th><th>XP/h</th><th>Kills</th><th>Loot</th><th>Gastos</th><th>Saldo</th></tr>${body}</table><div class="row sp" style="margin-top:8px"><span class="muted">Lucro total (loot − gastos)</span><b class="gold">${fmtK(Math.round(tot))} gp</b></div><p class="muted" style="font-size:.76rem">Saldo positivo: sobra para repartir. Negativo: deve receber para igualar a divisão (${fmtK(Math.round(avg))} gp cada). Valores vêm da análise de cada jogador desde que começou a caçada.</p>`]};
-  const _sp=SHEETS.party;SHEETS.party=function(){const r=_sp();if(S.party)r[1]+=`<div class="row" style="margin-top:10px"><button class="btn pri" data-a="open" data-v="partyan">📊 Party Analyzer</button></div>`;return r};
-  setInterval(()=>{if(S&&UI.sheet==='partyan')renderSheet()},2000);
-}catch(e){console.warn('eco44 party',e)}
+// ---------- Trainers online: 25% do ganho comum e sem relatório offline ----------
+SHEETS.trainer=function(){return['Trainers Online',`<h3>Sala dos Elementos</h3><p>Estátuas de fogo e energia mantêm os bonecos ativos. O treino funciona somente com você online e ataca o boneco automaticamente.</p><div class="kv"><span>Ganho</span><b>25% do treino comum</b></div><div class="kv"><span>Varinha de exercício</span><b>Mais rápida, separada deste sistema</b></div><div class="kv"><span>Progresso offline</span><b>Não recebe</b></div><button class="btn pri" data-a="trainergo">${S.onlineTraining?'Treino online ativo':'Ir para os trainers'}</button>${S.onlineTraining?'<button class="btn" data-a="trainerstop">Parar treino</button>':''}`]};
+ACT.trainergo=()=>{goTemple(true);if(!S.training)startTraining();S.onlineTraining=true;S.auto=true;const d=Wd.mobs.find(m=>m.id==='boneco');if(d)Pl.target=d;closeSheet();msg('Trainer online ativo: 25% de ganho e nenhum progresso offline.','c-sys');toast('Trainer online: 25% de ganho, sem progresso offline.')};
+ACT.trainerstop=()=>{S.onlineTraining=false;if(S.training)startTraining();renderSheet()};
+const _addTries44=addTries;addTries=function(k,n){return _addTries44(k,S.onlineTraining?n*.25:n)};
+const _startTraining44=startTraining;startTraining=function(){S.onlineTraining=false;return _startTraining44()};
+const _startHunt44=startHunt;startHunt=function(i){S.onlineTraining=false;if(i===BOSS_HUNT&&WORLD.enterBoss){const lvl=S.lvl,cd=S.bossCd&&S.bossCd[HUNTS[i].boss];S.lvl=HUNTS[i].lvl;if(S.bossCd)S.bossCd[HUNTS[i].boss]=0;const r=_startHunt44(i);S.lvl=lvl;if(S.bossCd&&cd)S.bossCd[HUNTS[i].boss]=cd;return r}return _startHunt44(i)};
+const _goTemple44=goTemple;goTemple=function(silent){S.onlineTraining=false;return _goTemple44(silent)};
+const _offline44=offline;offline=function(sec){if(S.onlineTraining){S.onlineTraining=false;S.training=false;save();return toast('O trainer online não gera progresso offline.')}return _offline44(sec)};
+setInterval(()=>{if(S&&S.onlineTraining&&Pl.target&&Pl.target.id==='boneco'){fx(Pl.target.x,Pl.target.y,'area',Math.floor(performance.now()/1000)%2?'fire':'energy')}},1200);
 
-// ---------- flechas/virotes de área (como burst arrow) ----------
-try{
-  for(const id of ['flecha_fogo','flecha_diam','virote_poder','virote_infernal'])if(ITEMS[id])ITEMS[id].aoe=1;
-  const _ba=baseAttack;baseAttack=function(d,t){const a=needAmmo()?curAmmo():null;const r=_ba.apply(this,arguments);
-    try{if(a&&ITEMS[a].aoe&&t&&t.x!=null&&Wd&&Wd.mobs){const raw=Math.max(1,Math.round((d.atk||10)*.55));for(const m of Wd.mobs.slice()){if(m===t||m.hp<=0||m.id==='boneco')continue;if(Math.abs(m.x-t.x)<=1&&Math.abs(m.y-t.y)<=1)dmgMob(m,raw,ITEMS[a].el||'phys',false)}}}catch(e){}return r};
-}catch(e){console.warn('eco44 aoe',e)}
+// ---------- Guilda independente e administração ----------
+ACT.openguild=()=>{openSheet('guilda');gLoadMine().then(()=>{if(!GUILD.gid)gLoadList();gChatLoad();renderSheet()})};
+ACT.gpromote=async u=>{if(GUILD.owner!==NET.uid)return;const m=GUILD.members[u];if(!m)return;const r=m.r==='Vice-líder'?'Membro':'Vice-líder';await netPut(`gmembers/${GUILD.gid}/${u}`,{...m,r});await gLoadMine();renderSheet()};
+ACT.gmotd=async()=>{if(GUILD.owner!==NET.uid)return;const el=$('gmotd'),txt=(el&&el.value||'').trim().slice(0,180);await netPut(`guilds/${GUILD.gid}/motd`,txt);toast('Aviso da guilda atualizado.');await gLoadMine()};
+SHEETS.guilda=function(){const g=GUILD.gid,members=Object.entries(GUILD.members||{}).sort((a,b)=>(a[1].r==='Líder'?-1:1)-(b[1].r==='Líder'?-1:1));let body='';if(g){const gd=GUILD.meta||(GUILD.list||[]).find(x=>x.id===g);body=`<h3>${esc(GUILD.name)}</h3><p class="muted">${esc(gd&&gd.motd||'Guilda com chat próprio, membros, cargos e administração pelo líder.')}</p><h3>Membros (${members.length})</h3><div class="list">${members.map(([u,m])=>`<div class="li"><div class="t"><b>${esc(m.n)}</b><small>${m.r||'Membro'} · nível ${m.l} · ${VOC[m.v]?VOC[m.v].nome:''}</small></div>${GUILD.owner===NET.uid&&u!==NET.uid?`<div class="row"><button class="btn sm" data-a="gpromote" data-v="${u}">${m.r==='Vice-líder'?'Rebaixar':'Promover'}</button><button class="btn sm" data-a="gkick" data-v="${u}">Expulsar</button></div>`:''}</div>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn sm" data-a="gleave">Sair da guilda</button></div><h3>Chat da guilda</h3><div class="list eco44-gchat">${GUILD.chat.slice(-30).map(m=>`<div><b>${esc(m.n)}:</b> ${esc(m.m)}</div>`).join('')||'<span class="muted">Sem mensagens.</span>'}</div><form id="gform" class="row"><input class="txt" id="gin" maxlength="140" placeholder="Mensagem para a guilda" style="flex:1"><button class="btn pri">Enviar</button></form>${GUILD.owner===NET.uid?`<h3>Administração</h3><label class="muted">Aviso da guilda<textarea class="txt" id="gmotd" maxlength="180" style="width:100%">${esc(gd&&gd.motd||'')}</textarea></label><button class="btn sm" data-a="gmotd">Salvar aviso</button>`:''}`}else{body=`<p>Crie sua própria guilda ou entre em qualquer uma das guildas do servidor. Cada grupo tem nome, líder, membros, cargos e chat próprios.</p><h3>Criar guilda</h3><div class="row"><input class="txt" id="gname" maxlength="20" placeholder="Nome da guilda" style="flex:1"><button class="btn pri" data-a="gcreate">Criar · ${fmtK(GUILD_PRICE)} gp</button></div><h3>Guildas do servidor</h3><div class="list">${(GUILD.list||[]).map(x=>`<div class="li"><div class="t"><b>${esc(x.n)}</b><small>${esc(x.motd||'Guilda recrutando jogadores')}</small></div><button class="btn sm pri" data-a="gjoin" data-v="${x.id}">Entrar</button></div>`).join('')||'<p class="muted">Carregando guildas…</p>'}</div>`}return['Guilda',body]};
+// Remove Guilda da tabela de Highscores.
+const _onlineGuild44=SHEETS.online;SHEETS.online=function(){const r=_onlineGuild44();if(UI.sub==='rank')r[1]=r[1].replace(/<button class="btn sm" data-a="openguild">Guilda<\/button>/,'');return r};
 
-// ---------- auras (10 efeitos visuais grátis) ----------
-const AU=[['chamas','Aura de Chamas','rise',['#ff5a1a','#ffd24a']],['gelo','Aura Glacial','rise',['#9fe0ff','#ffffff']],['sagrada','Aura Sagrada','ring',['#ffe9a0','#fff8d8']],['sombra','Aura Sombria','rise',['#7a3ab0','#1a0a26']],['natureza','Aura da Natureza','orbit',['#5fe07a','#c8ff9a']],['trovao','Aura do Trovão','orbit',['#9fd0ff','#ffffff']],['sangue','Aura Rubra','ring',['#ff3a3a','#7a0a14']],['ouro','Aura Dourada','rise',['#ffd24a','#fff3b0']],['oceano','Aura Oceânica','orbit',['#3aa8ff','#aee8ff']],['cosmica','Aura Cósmica','orbit',['#ff5ad0','#7a8aff']]];
-window.eco44Aura=function(g,x,y,tt,id){const A=AU.find(a=>a[0]===id);if(!A)return;const [,,sty,c]=A;g.save();g.globalCompositeOperation='lighter';
-  if(sty==='ring'||id==='oceano'){const k=(tt*.8)%1;g.globalAlpha=.5*(1-k);g.strokeStyle=c[0];g.lineWidth=2;g.beginPath();g.ellipse(x,y,8+k*14,3+k*6,0,0,6.283);g.stroke()}
-  for(let i=0;i<12;i++){const ph=(tt*(sty==='rise'?.7:.5)+i/12)%1;let px,py;
-    if(sty==='rise'){const a=i*2.4;px=x+Math.cos(a)*9*(1-ph*.5);py=y-4-ph*34}else{const a=tt*(id==='trovao'?3:1.6)+i*.5236;px=x+Math.cos(a)*13;py=y-14+Math.sin(a)*5-Math.sin(tt*2+i)*3}
-    g.globalAlpha=sty==='rise'?.8*(1-ph):.8;g.fillStyle=c[i%2];const s=id==='trovao'&&i%3===0?3:2;g.fillRect(Math.round(px),Math.round(py),s,s)}
-  g.restore()};
-try{
-  const _dp=drawPlayer;drawPlayer=function(g,px,py,tt){const r=_dp.apply(this,arguments);try{if(S&&S.aura)eco44Aura(g,Math.round(px-CAM.x)+16,Math.round(py-CAM.y)+28,tt,S.aura)}catch(e){}return r};
-  const _dg=drawGhost;drawGhost=function(g,p,tt){_dg.apply(this,arguments);try{if(p.au)eco44Aura(g,Math.round(p.rx*TS)-CAM.x+16,Math.round(p.ry*TS)-CAM.y+28,tt,p.au)}catch(e){}};
-  SHEETS.auras=function(){const cur=S.aura||'';return['Auras',`<p class="muted" style="margin:0 0 8px">Efeitos visuais grátis. Outros jogadores online também veem a sua aura.</p><div class="eco44-au"><button data-a="setaura" data-v="" class="${cur?'':'on'}">Nenhuma<small>Sem efeito</small></button>${AU.map(a=>`<button data-a="setaura" data-v="${a[0]}" class="${cur===a[0]?'on':''}">${a[1]}<small>${a[2]==='rise'?'Partículas subindo':a[2]==='ring'?'Anel no chão':'Partículas orbitando'}</small></button>`).join('')}</div>`]};
-  ACT.setaura=v=>{S.aura=v||null;save();renderSheet();netSend(true)};
-  const _vis=SHEETS.visual;SHEETS.visual=function(){const r=_vis();r[1]+=`<div class="row" style="margin-top:10px"><button class="btn pri" data-a="open" data-v="auras">✨ Auras (10 grátis)</button></div>`;return r};
-  const _menu=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu();const d=document.createElement('div');d.innerHTML=b;const first=[...d.querySelectorAll('button.mi')].find(x=>x.dataset.v==='visual');
-    if(first){first.insertAdjacentHTML('afterend','<button class="mi" data-a="open" data-v="auras">✨ Auras</button>')}
-    if(S.party){const bt=d.querySelector('button.mi[data-a="openparty"]');if(bt)bt.insertAdjacentHTML('afterend','<button class="mi" data-a="open" data-v="partyan">📊 Party Analyzer</button>')}
-    return[t,d.innerHTML]};
-}catch(e){console.warn('eco44 aura',e)}
+// ---------- CHAR GOD ----------
+const GOD_EMAIL='gabrielcullendk6@gmail.com';
+function isGod(){return!!(FBX.user&&String(FBX.user.email||'').toLowerCase()===GOD_EMAIL)}
+function isGodUID(uid,msg){return(uid===NET.uid&&isGod())||(msg&&msg.n==='CHAR GOD')}
+function godApply(){if(!isGod()||!S)return;WORLD.godUID=NET.uid;if(S.nome!=='CHAR GOD'){S.nome='CHAR GOD';save();netRank(true)} }
+setInterval(godApply,1000);
+const _hurtGod44=hurtPlayer;hurtPlayer=function(m,ranged){if(S&&S.god)return;return _hurtGod44(m,ranged)};
+SHEETS.god=function(){return['CHAR GOD · Administração',`<p>Painel exclusivo da conta do dono do servidor.</p><div class="grid g2"><button class="btn" data-a="godmode">God mode: ${S.god?'ligado':'desligado'}</button><button class="btn" data-a="godheal">Vida e mana completas</button><button class="btn" data-a="godlevel">+10 níveis</button><button class="btn" data-a="godgold">+100 mil gp</button><button class="btn" data-a="bossgo">Ir ao Chefe Global</button><button class="btn" data-a="godspawn">Invocar chefe agora</button><button class="btn" data-a="trainergo">Ir aos trainers</button><button class="btn" data-a="home">Voltar ao templo</button></div><h3>Anúncio global</h3><form id="godbroadcast" class="row"><input class="txt" id="godmsg" maxlength="140" placeholder="Mensagem para todos" style="flex:1"><button class="btn pri">Anunciar</button></form>`]};
+ACT.godpanel=()=>{if(isGod())openSheet('god')};ACT.godmode=()=>{if(isGod()){S.god=!S.god;renderSheet()}};ACT.godheal=()=>{if(isGod()){const d=D();S.hp=d.hp;S.mp=d.mp;hud();toast('Restaurado.')}};ACT.godlevel=()=>{if(isGod()){for(let i=0;i<10;i++)gainExp(Math.max(0,expFor(S.lvl+1)-S.exp));netRank(true);renderSheet()}};ACT.godgold=()=>{if(isGod()){S.gold+=100000;save();hud();renderSheet()}};
+ACT.godspawn=()=>{if(!isGod())return;WORLD.forced=Date.now();WORLD.dead[WORLD.forced]=0;worldSend({pt:'adminBoss',g:WORLD.forced});WORLD.enterBoss=true;startHunt(BOSS_HUNT);WORLD.enterBoss=false;setTimeout(worldTick,100)};
+document.addEventListener('submit',async e=>{if(e.target.id!=='godbroadcast'||!isGod())return;e.preventDefault();const i=$('godmsg'),m=(i.value||'').trim();if(!m)return;i.value='';await fetch(netURL('chat'),{method:'POST',body:JSON.stringify({u:NET.uid,n:'CHAR GOD',l:S.lvl,m:'[ANÚNCIO] '+m,t:{'.sv':'timestamp'}})});toast('Anúncio enviado.')},true);
 
-// ---------- montarias e roupas especiais liberadas ----------
-setInterval(()=>{try{if(!S||S.free44)return;S.free44=1;S.mounts=S.mounts||{};for(const m of MOUNTS)S.mounts[m.id]=1;S.outs=S.outs||{};if(typeof OUT_SP!=='undefined')for(const id in OUT_SP)S.outs[id]=1;S.addons=S.addons||{};S.addons[1]=1;S.addons[2]=1;save();msg('Presente: todas as montarias, roupas especiais e 10 auras foram liberadas. Veja em Menu > Visual.','c-lv')}catch(e){}},1500);
+// ---------- Menu e notificações ----------
+const _menu44=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu44();let out=b.replace('<h3>Atividades</h3><div class="menu-sec">',`<h3>Atividades</h3><div class="menu-sec"><button class="mi" data-a="openboss"><img src="${micon('coroa')}" alt="">Chefe Global</button><button class="mi" data-a="open" data-v="trainer"><img src="${micon('alvo')}" alt="">Trainers Online</button>`);if(isGod())out=out.replace('<h3>Opções</h3><div class="menu-sec">',`<h3>Administração</h3><div class="menu-sec"><button class="mi" data-a="godpanel"><img src="${micon('config')}" alt="">CHAR GOD</button></div><h3>Opções</h3><div class="menu-sec">`);return[t,out]};
 
-// ---------- gênero na criação do personagem ----------
-window.eco44Gender='m';
-new MutationObserver(()=>{const f=document.getElementById('createf40');if(!f||f.querySelector('#eco44-gen'))return;const v=f.querySelector('.vocs');if(!v)return;
-  v.insertAdjacentHTML('beforebegin',`<div id="eco44-gen" style="margin:8px 0"><span class="lbl">Gênero</span><div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="voc" data-g="m" aria-pressed="${window.eco44Gender==='m'}" style="min-height:44px;padding:8px 16px">♂ Homem</button><button type="button" class="voc" data-g="f" aria-pressed="${window.eco44Gender==='f'}" style="min-height:44px;padding:8px 16px">♀ Mulher</button></div></div>`);
-  f.querySelectorAll('#eco44-gen button').forEach(b=>b.onclick=ev=>{ev.preventDefault();ev.stopPropagation();window.eco44Gender=b.dataset.g;f.querySelectorAll('#eco44-gen button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)))})}).observe(document.body,{childList:true,subtree:true});
-setInterval(()=>{if(S&&!S.gender&&S.lvl===1)S.gender=window.eco44Gender||'m'},800);
-})();
+</script>
 
+<script id="eco44-manual">
+const _tutorial44=SHEETS.tutorial;SHEETS.tutorial=function(){const r=_tutorial44();r[1]+=`<h3>Mundo online</h3><p>Jogadores na mesma hunt e no mesmo andar veem as mesmas criaturas, suas posições e as magias lançadas. Se o jogador que hospeda a área sair, outro assume.</p><h3>Chefe Global</h3><p>Abra Menu → Chefe Global para entrar na arena. Um chefe muito forte aparece a cada duas horas. Quem contribui para o abate recebe ouro, gemas, suprimentos e item raro.</p><h3>Guildas</h3><p>Guilda fica separada dos Highscores. Existem várias guildas no servidor; cada uma tem líder, vice-líderes, membros, aviso e chat próprio.</p><h3>Trainers Online</h3><p>Abra Menu → Trainers Online. O ganho é de 25% do treino comum, diferente das varinhas de exercício, e não existe ganho offline.</p>`;return r};
 </script>
