@@ -354,7 +354,7 @@ const EL={phys:['Físico','#c9c2b0'],fire:['Fogo','#ff7a2e'],ice:['Gelo','#7fd8f
 const VOC={
   cavaleiro:{nome:'Cavaleiro',desc:'Linha de frente. Muita vida e golpes em área corpo a corpo.',hp:15,mp:5,cap:25,range:1,skill:'melee',wtype:'espada',ml:3,el:'phys',
     look:{body:'#56708f',trim:'#d9cfb8',hair:'#6b4a2b',skin:'#e4b78c',helm:'#9aa3ad',cape:'#7c2b26',weapon:'espada'}},
-  arqueiro:{nome:'Arqueiro',desc:'Ataca de longe com flechas e magias sagradas.',hp:10,mp:15,cap:20,range:4,skill:'dist',wtype:'arco',ml:1.4,el:'holy',
+  arqueiro:{nome:'Arqueiro',desc:'Ataca de longe com bow ou crossbow e magias sagradas.',hp:10,mp:15,cap:20,range:4,skill:'dist',wtype:'arco',ml:1.4,el:'holy',
     look:{body:'#4f6b3a',trim:'#c8b27a',hair:'#3b2a1a',skin:'#e4b78c',helm:null,cape:'#2f4a2a',weapon:'arco'}},
   druida:{nome:'Druida',desc:'Gelo e terra à distância, as melhores curas.',hp:5,mp:30,cap:10,range:4,skill:'ml',wtype:'cajado',ml:1,el:'ice',
     look:{body:'#2f6a5e',trim:'#bde3c9',hair:'#8a5a2b',skin:'#e4b78c',helm:null,cape:'#1d4a40',weapon:'cajado'}},
@@ -1551,7 +1551,7 @@ function draw(){
   const g=bctx,bw=buf.width,bh=buf.height;g.imageSmoothingEnabled=false;
   const [px,py]=epos(Pl);const topUI=125*DPR,botUI=(62+230)*DPR,cy=(topUI+cv.height-botUI)/2;
   const tx=Math.round(px+16-cv.width/2/SCALE),ty=Math.round(py+16-cy/SCALE);if(CAM._world!==Wd){CAM._world=Wd;CAM.x=tx;CAM.y=ty}else{CAM.x=Math.round(lerp(CAM.x,tx,.3));CAM.y=Math.round(lerp(CAM.y,ty,.3))}
-  g.fillStyle='#000';g.fillRect(0,0,bw,bh);if(Wd.below){g.drawImage(Wd.below,-CAM.x+32,-CAM.y+32);g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,0,bw,bh)}g.drawImage(Wd.tex,-CAM.x,-CAM.y);if(typeof drawGround==='function')drawGround(g,performance.now()/1000);
+  g.fillStyle='#000';g.fillRect(0,0,bw,bh);if(window.eco43Outside)eco43Outside(g,bw,bh);if(Wd.below){g.drawImage(Wd.below,-CAM.x+32,-CAM.y+32);g.fillStyle='rgba(0,0,0,.6)';g.fillRect(0,0,bw,bh)}g.drawImage(Wd.tex,-CAM.x,-CAM.y);if(typeof drawGround==='function')drawGround(g,performance.now()/1000);
   const now=performance.now(),tt=now/1000;
   for(const c of Wd.corpses){g.globalAlpha=c.t>6?1-(c.t-6)/2:1;g.drawImage(corpseSprite(c.id),c.x*TS-CAM.x-32,c.y*TS-CAM.y-32);g.globalAlpha=1}
   if(Pl.target){const [tx,ty]=epos(Pl.target);g.strokeStyle='#ff2020';g.lineWidth=1;g.strokeRect(Math.round(tx-CAM.x)+.5,Math.round(ty-CAM.y)+.5,TS-1,TS-1)}
@@ -1648,7 +1648,7 @@ function buildTown(z){
     put(1123,6,18,1);put(1124,8,18,1);put(1185,4,17,1);put(1186,4,18,1);put(1140,4,21,1);put(1141,5,21,1);put(1139,10,17,1);
     put(1189,35,18,1);put(1189,37,18,1);put(1190,36,20,1);put(1092,34,18,1);put(1094,38,18,1);put(1187,33,21,1);put(1188,39,17,1);
     put(1122,24,14,1);put(1164,19,14,1);put(1140,16,23,1);put(1142,27,23,1);
-    for(const [x,y] of [[17,18],[19,18],[25,18],[27,18]])dummies.push([x,y]);
+    for(const [x,y] of [[17,18],[19,18],[25,18],[27,18],[17,22],[19,22],[25,22],[27,22]])dummies.push([x,y]);signs.push({x:22,y:14.4,t:'Sala de Treino · online'});
     rect(5,27,39,31,160);
     for(let y=24;y<=26;y++)for(let x=36;x<=40;x++){G[I(x,y)]=2260;B[I(x,y)]=1}
     const free=(x,y)=>!B[I(x,y)]&&!walls.has(I(x,y))&&(G[I(x,y)]===101||G[I(x,y)]===103);
@@ -2813,7 +2813,7 @@ const _DG=D;D=function(){const d=_DG();const a=needAmmo()?curAmmo():null;if(a){c
 let noAmmoT=0,noAmmoSince=0;
 const _baG=baseAttack;baseAttack=function(d,t){
   if(needAmmo()){const a=curAmmo();
-    if(!a){const now=performance.now();if(now-noAmmoT>12000){noAmmoT=now;const tp=needAmmo()==='virote'?'virotes':'flechas';toast(`Sem ${tp}! Compre no Mercado.`);msg(`Você está sem ${tp}. ${weapon().nome} precisa de munição.`,'c-bad')}
+    if(!a){const now=performance.now();if(now-noAmmoT>12000){noAmmoT=now;const tp=needAmmo()==='virote'?'bolts':'arrows';toast(`Sem ${tp}! Compre no Mercado.`);msg(`Você está sem ${tp}. ${weapon().nome} precisa de munição.`,'c-bad')}
       if(!noAmmoSince)noAmmoSince=now;if(S.hunting&&S.hunt>=0&&now-noAmmoSince>10000&&!(HUNTS[S.hunt]||{}).road){noAmmoSince=0;msg('Caçada encerrada: acabou a munição.','c-sys');toast('Acabou a munição.');goTemple(true)}return}
     noAmmoSince=0;S.ammo[a]--;const pr=ammoPrice(a);S.an.sup+=pr;S.rate.sup+=pr;S.rate.ammo=(S.rate.ammo||0)+1;
     const w=weapon(),el0=w.el,ae=ITEMS[a].el;if(ae&&!el0)w.el=ae;try{_baG(d,t)}finally{w.el=el0}
@@ -2829,7 +2829,7 @@ const _eqG=ACT.equip;ACT.equip=v=>{const it=ITEMS[v];if(!it)return;
   if(it.slot==='escudo'){const w=weapon();if(w&&w.twoH)return toast(`${w.nome} usa as duas mãos. Não dá para usar escudo junto.`)}
   const hadShield=S.eq.escudo;_eqG(v);
   if(it.slot==='arma'&&it.twoH&&S.eq.arma&&S.eq.arma.id===v&&hadShield&&S.eq.escudo){const e=S.eq.escudo;S.bag[e.id]=(S.bag[e.id]||0)+1;S.eq.escudo=null;toast(`${it.nome} usa as duas mãos: o escudo foi para a mochila.`)}
-  if(it.ammo){const a=curAmmo();if(!a)msg(`${it.nome} atira ${it.ammo==='virote'?'virotes':'flechas'}. Compre no Mercado.`,'c-sys')}
+  if(it.ammo){const a=curAmmo();if(!a)msg(`${it.nome} atira ${it.ammo==='virote'?'bolts':'arrows'}. Compre no Mercado.`,'c-sys')}
   renderSheet()};
 // kit inicial completo (também completa personagens antigos uma vez)
 function starterKit(){if(!S||S.kitV===1)return;S.kitV=1;S.ammo=S.ammo||{};const v=S.voc,give=(slot,id)=>{if(!S.eq[slot]&&ITEMS[id])S.eq[slot]={id,f:0}};
@@ -2843,16 +2843,16 @@ setInterval(()=>{if(S&&S.kitV!==1){starterKit();if(typeof hud==='function')hud()
 // Mercado: munição
 const _mercG=SHEETS.mercado;SHEETS.mercado=function(){const [t,b]=_mercG();S.ammo=S.ammo||{};const w=weapon(),tp=w&&w.ammo;
   const rows=AMMO.map(x=>x[0]).sort((a,c)=>(ITEMS[a].amm===tp?0:1)-(ITEMS[c].amm===tp?0:1)||(ITEMS[a].amm<ITEMS[c].amm?-1:ITEMS[a].amm>ITEMS[c].amm?1:0)||ITEMS[a].lvl-ITEMS[c].lvl).map(id=>{const it=ITEMS[id],p=it.price,lock=S.lvl<it.lvl;
-    return`<div class="li"><img class="ic" src="${ammoIcon(id)}" alt=""><div class="t"><b>${it.nome}${S.ammoSel===id&&tp===it.amm?' <span class="chip">em uso</span>':''}</b><small>Ataque +${it.atk}${it.el?` · ${EL[it.el][0]}`:''} · ${it.amm==='virote'?'besta':'arco'} · nível ${it.lvl} · ${p} gp cada · você tem ${fmtN(S.ammo[id]||0)}</small></div>${!lock&&(S.ammo[id]||0)>0&&tp===it.amm&&S.ammoSel!==id?`<button class="btn sm pri" data-a="ammosel" data-v="${id}">Usar</button>`:''}</div>
+    return`<div class="li"><img class="ic" src="${ammoIcon(id)}" alt=""><div class="t"><b>${it.nome}${S.ammoSel===id&&tp===it.amm?' <span class="chip">em uso</span>':''}</b><small>Ataque +${it.atk}${it.el?` · ${EL[it.el][0]}`:''} · ${it.amm==='virote'?'crossbow':'bow'} · nível ${it.lvl} · ${p} gp cada · você tem ${fmtN(S.ammo[id]||0)}</small></div>${!lock&&(S.ammo[id]||0)>0&&tp===it.amm&&S.ammoSel!==id?`<button class="btn sm pri" data-a="ammosel" data-v="${id}">Usar</button>`:''}</div>
     <div class="row" style="margin:6px 0 10px">${lock?`<span class="bad">Precisa de nível ${it.lvl}</span>`:[100,500,1000].map(n=>`<button class="btn sm" data-a="buyammo" data-v="${id}" data-n="${n}" ${S.gold<p*n?'disabled':''}>+${n}</button>`).join('')}</div>`}).join('');
-  const sec=`<h3>Munição</h3><p class="muted" style="margin:0 0 8px">Arco atira flechas e besta atira virotes. Cada ataque básico gasta 1. Sem munição o arqueiro não ataca.${tp?` Sua arma usa <b>${tp==='virote'?'virotes':'flechas'}</b>.`:''}</p>${rows}`;
+  const sec=`<h3>Munição</h3><p class="muted" style="margin:0 0 8px">Bow usa arrows e crossbow usa bolts. Cada ataque básico gasta 1. Sem munição o arqueiro não ataca.${tp?` Sua arma usa <b>${tp==='virote'?'bolts':'arrows'}</b>.`:''}</p>${rows}`;
   const k=b.indexOf('<h3>');return[t,k<0?b+sec:b.slice(0,k)+sec+b.slice(k)]};
 ACT.buyammo=(v,n)=>{const it=ITEMS[v];n=+n;const p=it.price*n;if(S.gold<p||S.lvl<it.lvl)return;S.gold-=p;S.ammo=S.ammo||{};S.ammo[v]=(S.ammo[v]||0)+n;if(!S.ammoSel||!S.ammo[S.ammoSel])S.ammoSel=v;toast(`Comprou ${n} ${it.nome.toLowerCase()}s.`);renderSheet()};
 ACT.ammosel=v=>{S.ammoSel=v;toast(`Usando ${ITEMS[v].nome}.`);renderSheet()};
 // inventário: slot de munição (como no Tibia) e aviso de duas mãos
 const _invG=SHEETS.inventario;SHEETS.inventario=function(){const [t,b]=_invG();S.ammo=S.ammo||{};const w=weapon(),tp=w&&w.ammo,a=tp?curAmmo():null;
   const list=AMMO.map(x=>x[0]).filter(id=>(S.ammo[id]||0)>0).sort((x,y)=>(ITEMS[x].amm<ITEMS[y].amm?-1:ITEMS[x].amm>ITEMS[y].amm?1:0)||ITEMS[x].lvl-ITEMS[y].lvl);
-  const box=`<div class="li" style="margin:8px 0"><img class="ic" src="${a?ammoIcon(a):ammoIcon(tp==='virote'?'virote':'flecha')}" alt="" style="${a?'':'opacity:.35'}"><div class="t"><b>Munição${a?`: ${ITEMS[a].nome}`:''}</b><small>${tp?(a?`${fmtN(S.ammo[a])} unidades · ataque +${ITEMS[a].atk}`:`<span class="bad">Sem ${tp==='virote'?'virotes':'flechas'}. ${w.nome} não atira.</span>`):'Sua arma não usa munição.'}${w&&w.twoH?' · arma de duas mãos (sem escudo)':''}</small></div><button class="btn sm" data-a="open" data-v="mercado">Comprar</button></div>
+  const box=`<div class="li" style="margin:8px 0"><img class="ic" src="${a?ammoIcon(a):ammoIcon(tp==='virote'?'virote':'flecha')}" alt="" style="${a?'':'opacity:.35'}"><div class="t"><b>Munição${a?`: ${ITEMS[a].nome}`:''}</b><small>${tp?(a?`${fmtN(S.ammo[a])} unidades · ataque +${ITEMS[a].atk}`:`<span class="bad">Sem ${tp==='virote'?'bolts':'arrows'}. ${w.nome} não atira.</span>`):'Sua arma não usa munição.'}${w&&w.twoH?' · arma de duas mãos (sem escudo)':''}</small></div><button class="btn sm" data-a="open" data-v="mercado">Comprar</button></div>
     ${list.length>1?`<div class="row" style="gap:6px;margin-bottom:8px">${list.map(id=>`<button class="btn sm ${id===a?'pri':''}" data-a="ammosel" data-v="${id}" ${ITEMS[id].amm!==tp?'disabled':''}><img src="${ammoIcon(id)}" alt="" style="width:18px;height:18px;vertical-align:middle"> ${fmtK(S.ammo[id])}</button>`).join('')}</div>`:''}`;
   const k=b.indexOf('<div class="grid');return[t,k<0?box+b:b.slice(0,k)+box+b.slice(k)]};
 
@@ -3345,7 +3345,7 @@ function lanternIcon(on){const [c,g]=mk(32,32);g.fillStyle='#3a2a14';g.fillRect(
 function inboxIcon(){const [c,g]=mk(32,32);g.fillStyle='#6b4423';g.fillRect(5,10,22,16);g.fillStyle='#8a5a2e';g.fillRect(5,7,22,6);g.fillStyle='#d8b04a';g.fillRect(14,12,4,6);g.fillRect(5,12,22,2);g.strokeStyle='#2a1a0a';g.lineWidth=1.5;g.strokeRect(5.5,7.5,21,18);return c.toDataURL()}
 const _invM=SHEETS.inventario;SHEETS.inventario=function(){const [t,b]=_invM();const m=/<div class="eqgrid">([\s\S]*?)<\/div>(?=\s*(<div|<h3|<p|$))/.exec(b);if(!m)return[t,b];
   const btn=k=>{const r=new RegExp(`<button class="eqs[^"]*" data-a="eqsel" data-v="${k}"[\\s\\S]*?<\\/button>`).exec(m[1]);let h=r?r[0]:'<span></span>';const e=S.eq[k];if(e&&ITEMS[e.id])h=h.replace('<button class="eqs',`<button style="border-color:${rarItem(e.id).c}88" class="eqs rarb`);return h.replace('</button>',`<span class="lb">${(SLOTS.find(s=>s[0]===k)||[,''])[1].toUpperCase()}</span></button>`)};
-  const a=needAmmo()?curAmmo():null,ammoBtn=`<button class="eqs ${a?'':'empty'}" data-a="open" data-v="aljava" title="Aljava"><img src="${a?ammoIcon(a):ammoIcon('flecha')}" alt="" style="${a?'':'opacity:.2'}">${a?`<span class="qn">${fmtK(S.ammo[a])}</span>`:''}<span class="lb">ALJAVA</span></button>`;
+  const a=needAmmo()?curAmmo():null,ammoBtn=`<button class="eqs ${a?'':'empty'}" data-a="open" data-v="aljava" title="Quiver"><img src="${a?ammoIcon(a):ammoIcon('flecha')}" alt="" style="${a?'':'opacity:.2'}">${a?`<span class="qn">${fmtK(S.ammo[a])}</span>`:''}<span class="lb">ALJAVA</span></button>`;
   const inbox=`<button class="eqs" data-a="open" data-v="baus" title="Caixa de entrada"><img src="${inboxIcon()}" alt="">${(S.rewards||[]).length?`<span class="qn">${S.rewards.length}</span>`:''}<span class="lb">ENTRADA</span></button>`;
   const lant=`<button class="eqs ${S.lantern!==false?'on':''}" data-a="lantern" title="Lanterna"><img src="${lanternIcon(S.lantern!==false)}" alt=""><span class="lb">LANTERNA</span></button>`;
   const grid=`<div class="eqgrid2">${btn('amuleto')}${btn('elmo')}${btn('mochila')}${btn('arma')}${btn('armadura')}${btn('escudo')}${btn('anel')}${btn('calca')}${ammoBtn}${inbox}${btn('botas')}${lant}</div>`;
@@ -5068,12 +5068,12 @@ const ICON16={};const _ii16=itemIcon;itemIcon=function(id){const it=ITEMS[id];if
 const _boot16=boot;boot=function(d){const go=()=>{try{applyDC16()}catch(e){console.warn('dc',e)}_boot16(d)};Promise.race([DC_READY,new Promise(r=>setTimeout(r,4000))]).then(go,go)};
 // ---------- aljava: trocar a munição a qualquer momento ----------
 SHEETS.aljava=function(){S.ammo=S.ammo||{};if(S.bag)for(const [id] of AMMO)if(S.bag[id]){S.ammo[id]=(S.ammo[id]||0)+S.bag[id];delete S.bag[id]}
-  const w=weapon(),tp=w&&w.ammo,a=tp?curAmmo():null,tn=tp==='virote'?'virotes':'flechas';
+  const w=weapon(),tp=w&&w.ammo,a=tp?curAmmo():null,tn=tp==='virote'?'bolts':'arrows';
   const ids=AMMO.map(x=>x[0]).sort((x,y)=>(ITEMS[x].amm===tp?0:1)-(ITEMS[y].amm===tp?0:1)||ITEMS[x].lvl-ITEMS[y].lvl);
   const rows=ids.map(id=>{const it=ITEMS[id],have=S.ammo[id]||0,ok=tp===it.amm,lock=S.lvl<it.lvl;
     const btn=id===a?'<span class="chip">em uso</span>':have>0&&ok&&!lock?`<button class="btn sm pri" data-a="ammosel" data-v="${id}">Usar</button>`:'';
-    return`<div class="li"><img class="ic" src="${ammoIcon(id)}" alt=""><div class="t"><b>${it.nome}</b><small>Ataque +${it.atk}${it.el?` · ${EL[it.el][0]}`:''} · ${it.amm==='virote'?'besta':'arco'} · nível ${it.lvl} · você tem <b>${fmtN(have)}</b>${!ok&&tp?' · não serve na sua arma':''}${lock?` · <span class="bad">precisa de nível ${it.lvl}</span>`:''}</small></div>${btn}</div>${lock?'':qbuyHTML('buyammo',id)}`}).join('');
-  return['Aljava',`<p class="muted" style="margin:0 0 8px">${tp?`${esc(w.nome)} usa <b>${tn}</b>. Toque em <b>Usar</b> para trocar a munição. Cada ataque básico gasta 1.`:'Sua arma atual não usa munição. Arcos usam flechas e bestas usam virotes.'}</p><div class="list">${rows}</div>`]};
+    return`<div class="li"><img class="ic" src="${ammoIcon(id)}" alt=""><div class="t"><b>${it.nome}</b><small>Ataque +${it.atk}${it.el?` · ${EL[it.el][0]}`:''} · ${it.amm==='virote'?'crossbow':'bow'} · nível ${it.lvl} · você tem <b>${fmtN(have)}</b>${!ok&&tp?' · não serve na sua arma':''}${lock?` · <span class="bad">precisa de nível ${it.lvl}</span>`:''}</small></div>${btn}</div>${lock?'':qbuyHTML('buyammo',id)}`}).join('');
+  return['Quiver',`<p class="muted" style="margin:0 0 8px">${tp?`${esc(w.nome)} usa <b>${tn}</b>. Toque em <b>Usar</b> para trocar a munição. Cada ataque básico gasta 1.`:'Sua arma atual não usa munição. Bows usam arrows e crossbows usam bolts.'}</p><div class="list">${rows}</div>`]};
 
 // ===== v35: Pacote de arte do jogador — imagens com nomes genéricos (orc.png, chao/grama.png, avatar/cavaleiro.png...) =====
 // O jogo procura as imagens pelo NOME do arquivo. Se achar, usa; se não, usa a arte padrão. Nada é enviado para fora:
@@ -5241,9 +5241,9 @@ const WG2={eq:'Equipamento',bag:'Mochila',bat:'Monstros'};
 const wg2Box=document.createElement('div');wg2Box.id='wg2';document.body.appendChild(wg2Box);
 const wide2=()=>innerWidth>=900&&innerHeight>=560;
 function wg2S(){const w=wgS();for(const k in WG2)if(!w[k])w[k]={open:0,min:0};return w}
-const EQ2=[['amuleto','amul.'],['elmo','elmo'],['mochila','moch.'],['arma','arma'],['armadura','arm.'],['escudo','esc.'],['anel','anel'],['calca','calça'],['aljava','aljava'],['','',1],['botas','botas'],['','',1]];
+const EQ2=[['amuleto','amul.'],['elmo','elmo'],['mochila','moch.'],['arma','arma'],['armadura','arm.'],['escudo','esc.'],['anel','anel'],['calca','calça'],['aljava','quiver'],['','',1],['botas','botas'],['','',1]];
 function eqHTML2(){const cells=EQ2.map(([sl,lb,blank])=>{if(blank)return'<span></span>';if(sl==='aljava'){const a=typeof needAmmo==='function'&&needAmmo()?curAmmo():null;
-    return`<button data-a="open" data-v="aljava" class="${a?'':'e'}" title="Aljava"><img src="${ammoIcon(a||'flecha')}" alt="">${a?`<span class="q">${fmtK(S.ammo[a])}</span>`:`<span class="lb">${lb}</span>`}</button>`}
+    return`<button data-a="open" data-v="aljava" class="${a?'':'e'}" title="Quiver"><img src="${ammoIcon(a||'flecha')}" alt="">${a?`<span class="q">${fmtK(S.ammo[a])}</span>`:`<span class="lb">${lb}</span>`}</button>`}
   const e=S.eq&&S.eq[sl],it=e&&ITEMS[e.id];return`<button data-a="open" data-v="inventario" class="${it?'':'e'}" title="${it?esc(it.nome):lb}">${it?`<img src="${itemIcon(e.id)}" alt="">${e.f?`<span class="q">+${e.f}</span>`:''}`:`<span class="lb">${lb}</span>`}</button>`});
   return`<div class="eqg">${cells.join('')}</div>`}
 function bagHTML2(){const items=[];for(const [id,n] of Object.entries(S.bag||{}).filter(([id,n])=>n>0&&ITEMS[id]).sort((a,b)=>(ITEMS[b[0]].slot?1:0)-(ITEMS[a[0]].slot?1:0)||ITEMS[b[0]].value-ITEMS[a[0]].value)){let r=n;while(r>0){items.push([id,Math.min(100,r)]);r-=100}}
@@ -5297,12 +5297,12 @@ const _cfg20=SHEETS.config;SHEETS.config=function(){const r=_cfg20();try{r[1]=r[
 // ordem: primeiro o tipo da sua arma, depois o nível (do menor para o maior)
 const ammoOrder=tp=>AMMO.map(x=>x[0]).sort((a,b)=>(ITEMS[a].amm===tp?0:1)-(ITEMS[b].amm===tp?0:1)||(ITEMS[a].amm<ITEMS[b].amm?-1:ITEMS[a].amm>ITEMS[b].amm?1:0)||ITEMS[a].lvl-ITEMS[b].lvl);
 SHEETS.aljava=function(){S.ammo=S.ammo||{};if(S.bag)for(const [id] of AMMO)if(S.bag[id]){S.ammo[id]=(S.ammo[id]||0)+S.bag[id];delete S.bag[id]}
-  const w=weapon(),tp=w&&w.ammo,a=tp?curAmmo():null,tn=tp==='virote'?'virotes':'flechas',ids=ammoOrder(tp);let last=null,html='';
+  const w=weapon(),tp=w&&w.ammo,a=tp?curAmmo():null,tn=tp==='virote'?'bolts':'arrows',ids=ammoOrder(tp);let last=null,html='';
   for(const id of ids){const it=ITEMS[id],have=S.ammo[id]||0,ok=tp===it.amm,lock=S.lvl<it.lvl;
-    if(it.amm!==last){last=it.amm;html+=`${html?'</div>':''}<h3 style="margin:10px 0 6px">${it.amm==='virote'?'Virotes (besta)':'Flechas (arco)'}${tp&&!ok?' <span class="muted" style="font-size:.75rem">— não servem na sua arma</span>':''}</h3><div class="list">`}
+    if(it.amm!==last){last=it.amm;html+=`${html?'</div>':''}<h3 style="margin:10px 0 6px">${it.amm==='virote'?'Bolts (crossbow)':'Arrows (bow)'}${tp&&!ok?' <span class="muted" style="font-size:.75rem">— não servem na sua arma</span>':''}</h3><div class="list">`}
     const btn=id===a?'<span class="chip">em uso</span>':have>0&&ok&&!lock?`<button class="btn sm pri" data-a="ammosel" data-v="${id}">Usar</button>`:'';
     html+=`<div class="li" style="${lock?'opacity:.55':''}"><img class="ic" src="${ammoIcon(id)}" alt=""><div class="t"><b>${it.nome}</b><small>Nível ${it.lvl} · ataque +${it.atk}${it.el?` · ${EL[it.el][0]}`:''} · você tem <b>${fmtN(have)}</b>${lock?` · <span class="bad">precisa de nível ${it.lvl}</span>`:''}</small></div>${btn}</div>${lock||(tp&&!ok)?'':qbuyHTML('buyammo',id)}`}
-  return['Aljava',`<p class="muted" style="margin:0 0 8px">${tp?`${esc(w.nome)} usa <b>${tn}</b>. Toque em <b>Usar</b> para trocar. Cada ataque básico gasta 1.`:'Sua arma atual não usa munição. Arcos usam flechas e bestas usam virotes.'}</p>${html}</div>`]};
+  return['Quiver',`<p class="muted" style="margin:0 0 8px">${tp?`${esc(w.nome)} usa <b>${tn}</b>. Toque em <b>Usar</b> para trocar. Cada ataque básico gasta 1.`:'Sua arma atual não usa munição. Bows usam arrows e crossbows usam bolts.'}</p>${html}</div>`]};
 
 // ===== v38: modo ONLINE (Firebase Realtime Database) — ver outros jogadores, chat global, quem está online e ranking =====
 // Configuração: bloco ECO_CONFIG.online no topo do arquivo, ou Configurações → Modo online (cola apiKey e databaseURL).
@@ -5336,7 +5336,7 @@ function netStream(){if(NET.es){NET.es.close();NET.es=null}if(NET.esc){NET.esc.c
   // chat global (últimas 30 mensagens)
   const ec=new EventSource(netURL('chat','orderBy=%22$key%22&limitToLast=30'));NET.esc=ec;
   const addC=(k,m)=>{if(m&&m.pt&&typeof partySignal==='function')partySignal(k,m);if(!m||!m.m||NET.chat.some(x=>x.k===k))return;NET.chat.push({k,...m});NET.chat.sort((a,b)=>a.k<b.k?-1:1);if(NET.chat.length>60)NET.chat.shift();
-    if(NET._chatReady&&m.u!==NET.uid&&typeof msg==='function')msg(`[Global] ${m.n}: ${m.m}`,'c-sys');if(UI&&UI.sheet==='online'&&(UI.sub||'')==='chat')renderSheet()};
+    if(NET._chatReady&&m.u!==NET.uid&&typeof msg==='function')(!m.z||(m.z===zoneKey()&&Math.abs((m.x||0)-Pl.x)<=14&&Math.abs((m.y||0)-Pl.y)<=10))&&msg(`[${m.z?'Local':'Global'}] ${m.n}: ${m.m}`,'c-sys');if(UI&&UI.sheet==='online'&&(UI.sub||'')==='chat')renderSheet()};
   ec.addEventListener('put',e=>{let d;try{d=JSON.parse(e.data)}catch(x){return}if(!d)return;if(d.path==='/'){for(const k in (d.data||{}))addC(k,d.data[k]);setTimeout(()=>NET._chatReady=1,500)}else addC(d.path.slice(1),d.data)})}
 // ---------- liga, mantém o login e envia a própria posição ----------
 async function netStart(){NET.cfg=netCfg();if(!NET.cfg){NET.st='sem configuração';return}if(S&&S.netOff===true){NET.st='desligado';return}
@@ -5482,7 +5482,7 @@ SHEETS.online=function(){const sub=UI.sub||'lista',tab=(k,n)=>`<button class="bt
     else{if(!GUILD.list)gLoadList();body=`<p class="muted" style="margin:0 0 8px">Entre numa guilda ou crie a sua (${fmtK(GUILD_PRICE)} gp). O nome da guilda aparece embaixo do seu nome para os outros jogadores.</p>
       <div class="row" style="gap:6px;margin-bottom:10px"><input class="txt" id="gname" maxlength="20" placeholder="Nome da nova guilda" style="flex:1" autocomplete="off"><button class="btn pri" data-a="gcreate">Criar</button></div>
       <div class="list">${(GUILD.list||[]).map(g=>`<div class="li"><div class="t"><b>&lt;${esc(g.n)}&gt;</b><small>Guilda</small></div><button class="btn sm pri" data-a="gjoin" data-v="${esc(g.id)}">Entrar</button></div>`).join('')||`<p class="muted">${GUILD.list?'Nenhuma guilda ainda. Crie a primeira!':'Carregando…'}</p>`}</div>`}}
-  return['Online',`<div class="row sp" style="margin-bottom:8px;flex-wrap:wrap;gap:6px"><div class="row" style="gap:4px;flex-wrap:wrap">${tab('lista','Jogadores')}${tab('chat','Chat')}${tab('rank','Highscores')}${tab('guilda','Guilda')}</div><small>${st}</small></div>${NET.err?`<p class="bad" style="font-size:.8rem">${esc(NET.err)}</p>`:''}${body}`]};
+  return['Online',`<div class="row sp" style="margin-bottom:8px;flex-wrap:wrap;gap:6px"><div class="row" style="gap:4px;flex-wrap:wrap">${tab('lista','Jogadores')}${tab('rank','Highscores')}${tab('guilda','Guilda')}</div><small>${st}</small></div>${NET.err?`<p class="bad" style="font-size:.8rem">${esc(NET.err)}</p>`:''}${body}`]};
 ACT.rankvoc=v=>{UI.rankVoc=v;renderSheet()};
 const _nsub23=ACT.netsub;ACT.netsub=v=>{if(v==='guilda'){gLoadMine().then(()=>{gChatLoad();if(!GUILD.gid)gLoadList()})}if(v==='rank')netLoadRank();_nsub23(v)};
 ACT.openrank=()=>{openSheet('online','rank');netLoadRank()};
@@ -5517,7 +5517,7 @@ const _huntEcon40=huntEcon;huntEcon=function(){const r=_huntEcon40.apply(this,ar
 for(const q of QUESTS)if(q.rw&&q.rw.gold)q.rw.gold=Math.round(q.rw.gold*RATE);
 for(const w of WHEEL)if(w[0]==='gold'){w[1]*=RATE;w[2]=`${fmtN(w[1])} ouro`}
 for(const r of LEVEL_REWARDS)if(r[1]==='gold')r[2]*=RATE;
-function vocationDetail(k){const v=VOC[k],weapon={espada:'espadas e escudo',arco:'arcos, flechas e virotes',cajado:'cajados e magias de área',varinha:'varinhas e magias',manoplas:'manoplas e combate corpo a corpo'}[v.wtype]||v.wtype;return `<b>${v.nome}</b> · ${v.desc}<br><small>Estilo inicial: ${weapon}. A escolha pode ser vista pelo selo dourado “Selecionado”.</small>`}
+function vocationDetail(k){const v=VOC[k],weapon={espada:'espadas e escudo',arco:'bows, crossbows, arrows e bolts',cajado:'cajados e magias de área',varinha:'varinhas e magias',manoplas:'manoplas e combate corpo a corpo'}[v.wtype]||v.wtype;return `<b>${v.nome}</b> · ${v.desc}<br><small>Estilo inicial: ${weapon}. A escolha pode ser vista pelo selo dourado “Selecionado”.</small>`}
 creation=function(){pickVoc=pickVoc||'cavaleiro';const vc=Object.entries(VOC).map(([k,v])=>`<button type="button" class="voc" aria-pressed="${pickVoc===k}" data-a="pickvoc" data-v="${k}"><img src="${avatarURL(k)}" alt=""><span><b>${v.nome}</b><small>${v.desc}</small></span></button>`).join('');$('ov').innerHTML=`<div class="ov"><form class="modal" id="createf40"><div><span class="lbl">Novo personagem</span><h1>Eco das Cavernas</h1><p class="muted" style="margin:6px 0 0">Escolha um apelido único e uma vocação. Seus outros personagens serão preservados.</p></div><label style="display:flex;flex-direction:column;gap:6px"><span class="lbl">Apelido</span><input class="txt" id="cname" maxlength="18" autocomplete="off" value="" placeholder="Ex.: Guardião da Caverna" required></label><span class="lbl">Vocação — toque para selecionar</span><div class="vocs">${vc}</div><div class="voc40-detail" id="voc40-detail">${vocationDetail(pickVoc)}</div><div class="create40-status muted" id="create40-status" role="status"></div><button class="btn pri" id="create40-go" type="submit" style="padding:12px">Criar e entrar no jogo</button></form></div>`};
 const _pickVoc40=ACT.pickvoc;ACT.pickvoc=function(v){_pickVoc40(v);const d=$('voc40-detail');if(d)d.innerHTML=vocationDetail(v)};
 async function create40Submit(){
@@ -5626,13 +5626,14 @@ const _menu41=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_menu41();return[t,
 function entryDialog(title,body){const old=document.querySelector('.eco40-dialog');if(old)old.remove();const d=document.createElement('div');d.className='eco40-dialog';d.innerHTML=`<section role="dialog" aria-modal="true" aria-label="${esc(title)}"><h2>${title}</h2>${body}<div class="actions"><button class="btn pri" data-entry-close>Voltar ao menu</button></div></section>`;document.body.appendChild(d);d.querySelector('[data-entry-close]').onclick=()=>d.remove()}
 function entryShow(requiresAuth,done){entryShow.presented=true;let g=$('gate');if(!g){g=document.createElement('div');g.id='gate';document.body.appendChild(g)}g.classList.add('eco40-gate');g.innerHTML=`<main class="eco40-entry"><section class="eco40-brand"><p class="eyebrow">Um RPG online de exploração e evolução</p><h1>Eco das<br>Cavernas</h1><p>Explore terras esquecidas, enfrente criaturas, construa seu personagem e encontre outros aventureiros.</p><button class="eco40-manual" data-entry="manual">Mecânicas do jogo <span>Conheça o mundo, as classes e todas as mecânicas</span></button></section><nav class="eco40-menu" aria-label="Entrar no jogo"><p class="eco40-menu-label">Entrar no jogo</p>${requiresAuth?`<form class="eco40-login" id="email-login"><label>E-mail<input id="login-email" type="email" autocomplete="email" required placeholder="seu@email.com"></label><label>Senha<input id="login-pass" type="password" autocomplete="current-password" required minlength="6" placeholder="mínimo de 6 caracteres"></label><button class="primary" id="email-go" type="submit">Entrar com e-mail</button><div class="eco40-login-alt"><button type="button" id="email-create">Criar conta</button><button type="button" id="email-reset">Esqueci a senha</button></div></form><div class="eco40-or"><span>ou</span></div><button class="gbtn" id="gate-go" disabled>${GLOGO} Entrar com Google</button>`:'<p class="muted">Modo local · progresso salvo neste navegador</p><button class="primary" id="local-go">Entrar no jogo</button>'}<p class="eco40-status" id="gate-st" role="status">${requiresAuth?'Conectando ao login…':''}</p></nav><span class="eco40-foot">XP 10× · OURO CONQUISTADO 10× · SALVAMENTO AUTOMÁTICO</span></main>`;
  const stEl=()=>$('gate-st');let started=false;const busy=v=>{for(const b of g.querySelectorAll('button'))if(!b.dataset.entry)b.disabled=v};const finish=()=>{g.remove();done();setTimeout(()=>{if(S){prepareState();tutorialRender()}},60)};const showVerify=u=>{started=false;FBX.user=u;busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-verify');if(!box){box=document.createElement('div');box.id='email-verify';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Confirme seu e-mail</h3><p>Enviamos um link de verificação para <b>${esc(u.email||'')}</b>. Abra o e-mail e clique no link. Sem essa confirmação, a conta não acessa os personagens.</p><button class="primary" id="verify-check">Já verifiquei</button><div class="eco40-login-alt"><button id="verify-resend">Reenviar e-mail</button><button id="verify-back">Usar outra conta</button></div>`;stEl().textContent='Verifique também o spam e o lixo eletrônico.';$('verify-check').onclick=async()=>{busy(true);stEl().textContent='Conferindo verificação…';try{await u.reload();if(u.emailVerified){const box=$('email-verify');if(box)box.remove();proceed(u)}else{busy(false);stEl().textContent='O e-mail ainda não foi verificado. Abra o link enviado e tente de novo.'}}catch(e){busy(false);stEl().textContent=authMsg(e)}};$('verify-resend').onclick=async()=>{busy(true);try{await u.sendEmailVerification();stEl().textContent='Novo e-mail de verificação enviado.'}catch(e){stEl().textContent=authMsg(e)}busy(false)};$('verify-back').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}location.reload()}};
- const proceed=async u=>{if(started)return;const password=u.providerData&&u.providerData.some(x=>x.providerId==='password');if(password&&!u.emailVerified)return showVerify(u);started=true;FBX.user=u;busy(true);stEl().textContent=`Olá, ${u.displayName||u.email||'jogador'}! Sincronizando seus personagens…`;try{NET.cfg=netCfg();await netAuth();await cloudLinkFB()}catch(e){stEl().textContent='Aviso: '+(e.message||e)}finish()};
+ let userAct=false;try{userAct=sessionStorage.getItem('eco43act')==='1'}catch(e){}const markAct=()=>{userAct=true;try{sessionStorage.setItem('eco43act','1')}catch(e){}};const showResume=u=>{busy(false);const form=$('email-login'),google=$('gate-go'),or=g.querySelector('.eco40-or');if(form)form.hidden=true;if(google)google.hidden=true;if(or)or.hidden=true;let box=$('email-resume');if(!box){box=document.createElement('div');box.id='email-resume';box.className='eco40-verify';g.querySelector('.eco40-menu').insertBefore(box,stEl())}box.innerHTML=`<h3>Continuar com esta conta?</h3><p>Este navegador já está conectado como <b>${esc(u.email||u.displayName||'uma conta')}</b>.</p><button class="primary" id="resume-go">Continuar com esta conta</button><div class="eco40-login-alt"><button id="resume-other">Usar outra conta ou criar uma nova</button></div>`;stEl().textContent='';$('resume-go').onclick=()=>{markAct();box.remove();proceed(u)};$('resume-other').onclick=async()=>{try{await FBX.auth.signOut()}catch(e){}try{sessionStorage.removeItem('eco43act')}catch(e){}location.reload()}};
+ const proceed=async u=>{if(started)return;try{sessionStorage.removeItem('eco43act')}catch(e){}const password=u.providerData&&u.providerData.some(x=>x.providerId==='password');if(password&&!u.emailVerified)return showVerify(u);started=true;FBX.user=u;busy(true);stEl().textContent=`Olá, ${u.displayName||u.email||'jogador'}! Sincronizando seus personagens…`;try{NET.cfg=netCfg();await netAuth();await cloudLinkFB()}catch(e){stEl().textContent='Aviso: '+(e.message||e)}finish()};
  g.querySelector('[data-entry="manual"]').onclick=()=>entryDialog('Mecânicas do jogo',manualHTML());if(!requiresAuth){$('local-go').onclick=finish;return}
  (async()=>{try{await loadJS(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-app-compat.js`);await loadJS(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-auth-compat.js`);const c=netCfg(),authDomain=c.authDomain||(c.databaseURL.match(/https:\/\/([^.]+?)(-default-rtdb)?\./)||[])[1]+'.firebaseapp.com';if(!firebase.apps.length)firebase.initializeApp({apiKey:c.apiKey,authDomain,databaseURL:c.databaseURL});FBX.auth=firebase.auth();try{await FBX.auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)}catch(e){}
- FBX.auth.onAuthStateChanged(u=>{if(u)proceed(u);else{busy(false);stEl().textContent='Entre para acessar seus personagens ou consulte as mecânicas.'}});FBX.auth.getRedirectResult().catch(e=>{busy(false);stEl().textContent=authMsg(e)});
- $('gate-go').onclick=async()=>{busy(true);stEl().textContent='Abrindo o Google…';const pv=new firebase.auth.GoogleAuthProvider();pv.setCustomParameters({prompt:'select_account'});try{await FBX.auth.signInWithPopup(pv)}catch(e){if(/popup|operation-not-supported|cancelled/.test(e.code||'')){try{await FBX.auth.signInWithRedirect(pv);return}catch(e2){e=e2}}busy(false);stEl().textContent=authMsg(e)}};
- $('email-login').onsubmit=async e=>{e.preventDefault();busy(true);stEl().textContent='Entrando…';try{await FBX.auth.signInWithEmailAndPassword($('login-email').value.trim(),$('login-pass').value)}catch(e){busy(false);stEl().textContent=authMsg(e)}};
- $('email-create').onclick=async()=>{const em=$('login-email').value.trim(),pw=$('login-pass').value;if(!em||pw.length<6)return stEl().textContent='Preencha o e-mail e uma senha com pelo menos 6 caracteres.';busy(true);stEl().textContent='Criando sua conta…';try{const cr=await FBX.auth.createUserWithEmailAndPassword(em,pw);await cr.user.sendEmailVerification();showVerify(cr.user)}catch(e){busy(false);stEl().textContent=authMsg(e)}};
+ FBX.auth.onAuthStateChanged(u=>{if(u){const pw=u.providerData&&u.providerData.some(x=>x.providerId==='password');if(userAct||(pw&&!u.emailVerified))proceed(u);else showResume(u)}else{busy(false);stEl().textContent='Entre para acessar seus personagens ou consulte as mecânicas.'}});FBX.auth.getRedirectResult().catch(e=>{busy(false);stEl().textContent=authMsg(e)});
+ $('gate-go').onclick=async()=>{markAct();busy(true);stEl().textContent='Abrindo o Google…';const pv=new firebase.auth.GoogleAuthProvider();pv.setCustomParameters({prompt:'select_account'});try{await FBX.auth.signInWithPopup(pv)}catch(e){if(/popup|operation-not-supported|cancelled/.test(e.code||'')){try{await FBX.auth.signInWithRedirect(pv);return}catch(e2){e=e2}}busy(false);stEl().textContent=authMsg(e)}};
+ $('email-login').onsubmit=async e=>{e.preventDefault();markAct();busy(true);stEl().textContent='Entrando…';try{await FBX.auth.signInWithEmailAndPassword($('login-email').value.trim(),$('login-pass').value)}catch(e){busy(false);stEl().textContent=authMsg(e)}};
+ $('email-create').onclick=async()=>{markAct();const em=$('login-email').value.trim(),pw=$('login-pass').value;if(!em||pw.length<6)return stEl().textContent='Preencha o e-mail e uma senha com pelo menos 6 caracteres.';busy(true);stEl().textContent='Criando sua conta…';try{const cr=await FBX.auth.createUserWithEmailAndPassword(em,pw);await cr.user.sendEmailVerification();showVerify(cr.user)}catch(e){busy(false);stEl().textContent=authMsg(e)}};
  $('email-reset').onclick=async()=>{const em=$('login-email').value.trim();if(!em)return stEl().textContent='Digite seu e-mail para recuperar a senha.';busy(true);try{await FBX.auth.sendPasswordResetEmail(em);stEl().textContent='E-mail de recuperação enviado. Confira sua caixa de entrada.'}catch(e){stEl().textContent=authMsg(e)}busy(false)};
  }catch(e){stEl().textContent='Não consegui carregar o login: '+(e.message||e)+'. Verifique a internet e recarregue.'}})()}
 gateShow=function(done){entryShow(true,done)};
@@ -5699,11 +5700,163 @@ function rankNorm42(n){return String(n||'').normalize('NFD').replace(/[\u0300-\u
 netLoadRank=async function(){if(!netOn())return;const sort=RANK_STATS[UI.rankSort]?UI.rankSort:'l';NET.rank={t:Date.now(),list:(NET.rank&&NET.rank.list)||[],sort};try{const r=await fetch(netURL('rank',`orderBy=%22${sort}%22&limitToLast=100`));const j=await r.json();if(j&&j.error){NET.err='Highscores: '+j.error;return}const seen=new Set();NET.rank.list=Object.entries(j||{}).map(([u,v])=>({u,...v})).sort((a,b)=>((+b[sort]||-1)-(+a[sort]||-1))||((+b.l||0)-(+a.l||0))).filter(x=>{const k=rankNorm42(x.n);if(!k||seen.has(k))return false;seen.add(k);return true});NET.err='';if(UI.sheet==='online'&&UI.sub==='rank')renderSheet()}catch(e){NET.err='Não foi possível carregar os Highscores.'}};
 ACT.rankstat=v=>{UI.rankSort=RANK_STATS[v]?v:'l';NET.rank=null;renderSheet()};
 const _online42=SHEETS.online;SHEETS.online=function(){if(UI.sub!=='rank')return _online42();if(!NET.rank||NET.rank.sort!==(UI.rankSort||'l')||Date.now()-(NET.rank.t||0)>30000)netLoadRank();const sort=UI.rankSort||'l',voc=UI.rankVoc||'',all=(NET.rank&&NET.rank.list)||[],R=voc?all.filter(r=>r.v===voc):all;const tab=(k,n)=>`<button class="btn sm" data-a="netsub" data-v="${k}">${n}</button>`;
- return['Highscores',`<div class="eco42-rank-tabs"><button class="btn sm" data-a="netsub" data-v="lista">Jogadores</button><button class="btn sm" data-a="netsub" data-v="chat">Chat</button><button class="btn sm pri" data-a="netsub" data-v="rank">Highscores</button><button class="btn sm" data-a="openguild">Guilda</button></div><div class="eco42-rank-filters"><label>Ranking<select class="txt" data-rankstat>${Object.entries(RANK_STATS).map(([k,n])=>`<option value="${k}" ${sort===k?'selected':''}>${n}</option>`).join('')}</select></label><label>Classe<select class="txt" data-rankvoc><option value="">Todas</option>${Object.keys(VOC).map(v=>`<option value="${v}" ${voc===v?'selected':''}>${VOC[v].nome}</option>`).join('')}</select></label></div><div class="eco42-table-wrap"><table class="eco42-rank"><thead><tr><th>#</th><th>Jogador</th><th>Level</th><th>${sort==='l'?'Skill principal':RANK_STATS[sort]}</th><th>Classe</th></tr></thead><tbody>${R.map((r,i)=>`<tr class="${r.u===NET.uid||String(r.u).startsWith(NET.uid+'_')?'me':''}"><td>${i+1}º</td><td><b>${esc(r.n)}</b></td><td>${r.l||'—'}</td><td>${(sort==='l'?rankMain42(r):r[sort])??'—'}</td><td>${VOC[r.v]?VOC[r.v].nome:'—'}</td></tr>`).join('')||'<tr><td colspan="5">Nenhum personagem neste filtro. Os skills aparecem depois que cada jogador sincroniza com esta versão.</td></tr>'}</tbody></table></div><p class="muted eco42-rank-note">Classificação por personagem, sem status de online. Um apelido aparece apenas uma vez.</p>`]};
+ return['Highscores',`<div class="eco42-rank-tabs"><button class="btn sm" data-a="netsub" data-v="lista">Jogadores</button><button class="btn sm pri" data-a="netsub" data-v="rank">Highscores</button><button class="btn sm" data-a="openguild">Guilda</button></div><div class="eco42-rank-filters"><label>Ranking<select class="txt" data-rankstat>${Object.entries(RANK_STATS).map(([k,n])=>`<option value="${k}" ${sort===k?'selected':''}>${n}</option>`).join('')}</select></label><label>Classe<select class="txt" data-rankvoc><option value="">Todas</option>${Object.keys(VOC).map(v=>`<option value="${v}" ${voc===v?'selected':''}>${VOC[v].nome}</option>`).join('')}</select></label></div><div class="eco42-table-wrap"><table class="eco42-rank"><thead><tr><th>#</th><th>Jogador</th><th>Level</th><th>${sort==='l'?'Skill principal':RANK_STATS[sort]}</th><th>Classe</th></tr></thead><tbody>${R.map((r,i)=>`<tr class="${r.u===NET.uid||String(r.u).startsWith(NET.uid+'_')?'me':''}"><td>${i+1}º</td><td><b>${esc(r.n)}</b></td><td>${r.l||'—'}</td><td>${(sort==='l'?rankMain42(r):r[sort])??'—'}</td><td>${VOC[r.v]?VOC[r.v].nome:'—'}</td></tr>`).join('')||'<tr><td colspan="5">Nenhum personagem neste filtro. Os skills aparecem depois que cada jogador sincroniza com esta versão.</td></tr>'}</tbody></table></div><p class="muted eco42-rank-note">Classificação por personagem, sem status de online. Um apelido aparece apenas uma vez.</p>`]};
 document.addEventListener('change',e=>{if(e.target.matches('[data-rankstat]'))ACT.rankstat(e.target.value);if(e.target.matches('[data-rankvoc]')){UI.rankVoc=e.target.value;renderSheet()}},true);
 
 // Layout limpo por padrão; painéis continuam disponíveis em Configurações e no menu.
 const _wgRender42=wgRender;wgRender=function(){if(S&&!S.ui?.eco42Clean){S.ui=S.ui||{};S.ui.eco42Clean=1;const w=wgS();w.hunt.open=0;w.loot.open=0}return _wgRender42()};
 const _wg2Render42=wg2Render;wg2Render=function(){if(S&&!S.ui?.eco42Panels){S.ui=S.ui||{};S.ui.eco42Panels=1;S.ui.eco40Panels=1;S.ui.eqDef=1;const w=wg2S();w.eq.min=1;w.bag.open=0;w.bat.open=0}return _wg2Render42()};
+
+</script>
+<script id="eco43-js">
+// ===== v43: ajustes do feedback de teste (nomes, equipamento, chat único, comparação, mapa, menu) =====
+(function(){
+const st=document.createElement('style');st.id='eco43-css';st.textContent=`
+/* slots vazios do equipamento ficam legíveis: ícone-fantasma + rótulo */
+#wg2 .eqg button.e{opacity:1}
+#wg2 .eqg button.e img{opacity:.4;filter:grayscale(1)}
+#wg2 .eqg button .lb{position:absolute;left:0;right:0;bottom:1px;text-align:center;font:700 7px/1 var(--f-m);color:#b9a98a;text-transform:uppercase;text-shadow:0 0 2px #000,0 0 2px #000;pointer-events:none}
+#wg2 .eqg button.eco43-bag,#wg2 .eqg button.eco43-q{border-color:#9a7a38}
+#wg2 .eqg button.eco43-q.empty{border-color:#d0463a;box-shadow:0 0 6px rgba(208,70,58,.45)}
+#wg2 .eqg button.eco43-q.empty .q{color:#ff7a6a}
+#wg2 .eqg button.eco43-q.empty img{opacity:.55}
+.eqs.empty img{opacity:.45!important}
+/* comparação de equipamento */
+.eco43-cmp{margin:6px 0;padding:8px 10px;border:1px solid #3a3a3a;border-radius:8px;background:#0e0e0e;font-size:.8rem}
+.eco43-cmp b{display:block;margin-bottom:4px}
+.eco43-cmp table{width:100%;border-collapse:collapse}
+.eco43-cmp td{padding:1px 4px;font-size:.8rem}
+.eco43-cmp td:last-child{text-align:right;font-weight:700}
+.eco43-cmp .up{color:#5fd36b}.eco43-cmp .dn{color:#ff7a6a}.eco43-cmp .eq{color:#aaa}
+.eco43-cmp .ok{color:#5fd36b}.eco43-cmp .no{color:#ff7a6a}
+#eco43-net{font:700 .62rem var(--f-m);flex:none}
+`;document.head.appendChild(st);
+
+// ---------- 1. nomes como no Tibia: Bow/Arrow e Crossbow/Bolt ----------
+try{
+  const AMN={'Perfurante':'Piercing','de Fogo':'Fire','de Cristal':'Crystal','de Diamante':'Diamond','de Poder':'Power','Infernal':'Infernal','Espectral':'Spectral','Arcana':'Arcane','Abissal':'Abyssal','Primordial':'Primordial','Celestial':'Celestial','Colossal':'Colossal','Imortal':'Immortal','Divina':'Divine'};
+  for(const id in ITEMS){const it=ITEMS[id];
+    if(it.amm){const base=it.amm==='virote'?'Bolt':'Arrow',rest=String(it.nome).replace(/^(Flecha|Virote)\s*/,'').trim();it.nome=rest?`${AMN[rest]||rest} ${base}`:base}
+    else if(it.wtype==='arco'&&it.ammo){it.nome=String(it.nome).replace(/^(Arco|Besta)(?=\s|$)/,it.ammo==='virote'?'Crossbow':'Bow')}}
+  if(typeof WNAME!=='undefined')WNAME.arco='Bow';
+  if(typeof EXN!=='undefined')EXN.arco='Bow';
+}catch(e){console.warn('eco43 nomes',e)}
+
+// ---------- 2. munição que caiu na mochila passa para o quiver sozinha ----------
+try{
+  const _ca=curAmmo;
+  curAmmo=function(){if(S&&S.bag&&typeof AMMO!=='undefined'){S.ammo=S.ammo||{};for(const x of AMMO){const id=x[0];if(S.bag[id]>0){S.ammo[id]=(S.ammo[id]||0)+S.bag[id];delete S.bag[id]}}}return _ca()};
+}catch(e){console.warn('eco43 ammo',e)}
+
+// ---------- 3. janela Equipamento: mochila, quiver e slots vazios visíveis ----------
+try{
+  eqHTML2=function(){
+    const cells=EQ2.map(([sl,lb,blank])=>{
+      if(blank)return'<span></span>';
+      if(sl==='mochila'){const n=Object.entries(S.bag||{}).filter(([id,q])=>q>0&&ITEMS[id]).length;
+        return`<button data-a="open" data-v="inventario" class="eco43-bag" title="Mochila · ${n} tipo(s) de item"><img src="${icon('mochila')}" alt=""><span class="q">${n}</span></button>`}
+      if(sl==='aljava'){const tp=typeof needAmmo==='function'?needAmmo():null;
+        if(!tp)return`<button data-a="open" data-v="aljava" class="e" title="Quiver (sua arma atual não usa munição)"><img src="${ammoIcon('flecha')}" alt=""><span class="lb">quiver</span></button>`;
+        const a=curAmmo(),left=a?(S.ammo[a]||0):0,nm=a?ITEMS[a].nome:(tp==='virote'?'Bolt':'Arrow');
+        return`<button data-a="open" data-v="aljava" class="eco43-q ${a?'':'empty'}" title="${a?`${esc(nm)}: ${left} restantes (gasta 1 por ataque)`:`Sem ${tp==='virote'?'bolts':'arrows'}! Compre no Mercado`}"><img src="${ammoIcon(a||(tp==='virote'?'virote':'flecha'))}" alt=""><span class="q">${fmtK(left)}</span></button>`}
+      const e=S.eq&&S.eq[sl],it=e&&ITEMS[e.id];
+      if(it)return`<button data-a="open" data-v="inventario" title="${esc(it.nome)}"><img src="${itemIcon(e.id)}" alt="">${e.f?`<span class="q">+${e.f}</span>`:''}</button>`;
+      return`<button data-a="open" data-v="inventario" class="e" title="${lb} vazio"><img src="${icon(sl==='arma'?VOC[S.voc].wtype:sl,1)}" alt=""><span class="lb">${lb}</span></button>`});
+    return`<div class="eqg">${cells.join('')}</div>`};
+}catch(e){console.warn('eco43 equip',e)}
+
+// ---------- 4. comparar item com o que está equipado ----------
+try{
+  const _it=ACT.itinfo;
+  ACT.itinfo=function(v,n){_it(v,n);
+    try{const it=ITEMS[v];if(!it||!S)return;const md=document.querySelector('#ov .modal');if(!md||md.querySelector('.eco43-cmp'))return;
+      let html='';
+      if(it.slot){
+        const cur=S.eq[it.slot],ci=cur&&ITEMS[cur.id],same=cur&&cur.id===v;
+        const vocOK=!it.voc||it.voc.includes(S.voc),lvOK=S.lvl>=(it.lvl||1);
+        const vn=x=>VOC[x]?VOC[x].nome:x;
+        let status;
+        if(same)status='<span class="eq">Este item já está equipado.</span>';
+        else if(!vocOK)status=`<span class="no">✖ ${esc(VOC[S.voc].nome)} não pode usar. Só: ${it.voc.map(vn).join(', ')}.</span>`;
+        else if(!lvOK)status=`<span class="no">✖ Precisa de nível ${it.lvl} (você é ${S.lvl}).</span>`;
+        else status='<span class="ok">✔ Você pode equipar.</span>';
+        let rows='';
+        if(!same&&vocOK){
+          const m=1+((cur&&cur.f)||0)*.1;
+          const K=[['atk','Ataque'],['arm','Armadura'],['def','Defesa'],['ml','Magic Level'],['skill','Skill'],['speed','Velocidade'],['hp','Vida'],['mp','Mana']];
+          for(const [k,lab] of K){const a=Math.round(it[k]||0),b=ci?Math.round((ci[k]||0)*m):0;if(!a&&!b)continue;const d=a-b;
+            rows+=`<tr><td>${lab}</td><td>${a} <span class="eq">vs ${b}</span></td><td class="${d>0?'up':d<0?'dn':'eq'}">${d>0?'▲ +':d<0?'▼ ':'= '}${d||''}</td></tr>`}
+          if(ci&&it.twoH&&!ci.twoH&&S.eq.escudo)rows+=`<tr><td colspan="3" class="dn">Usa as duas mãos: o escudo vai para a mochila.</td></tr>`}
+        html=`<div class="eco43-cmp"><b>${same?'Equipado':ci?`Comparando com: ${esc(ci.nome)}${cur.f?` +${cur.f}`:''}`:'Slot vazio: nada equipado'}</b>${status}${rows?`<table>${rows}</table>`:''}</div>`}
+      else if(it.amm){
+        const tp=typeof needAmmo==='function'?needAmmo():null,w=typeof weapon==='function'?weapon():null;
+        const fits=tp===it.amm,nm=it.amm==='virote'?'crossbow':'bow';
+        html=`<div class="eco43-cmp"><b>Munição de ${nm}</b>${fits?`<span class="ok">✔ Compatível com ${esc(w.nome)}.</span>`:w&&tp?`<span class="no">✖ ${esc(w.nome)} usa ${tp==='virote'?'bolts':'arrows'}.</span>`:`<span class="eq">Equipe um ${nm} para usar.</span>`}<br><span class="eq">Cada ataque básico gasta 1 unidade.</span></div>`}
+      if(!html)return;
+      const cb=md.querySelector('[data-a="close"]'),last=cb&&cb.closest('.row');
+      if(last)last.insertAdjacentHTML('beforebegin',html);else md.insertAdjacentHTML('beforeend',html);
+    }catch(e){console.warn('eco43 cmp',e)}};
+}catch(e){console.warn('eco43 itinfo',e)}
+
+// ---------- 5. chat único: Global · Local · Loot · Sistema ----------
+try{
+  const CH=[['global','Global'],['local','Local'],['loot','Loot'],['sys','Sistema']];
+  const hhmm=t=>typeof t==='number'?new Date(t).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+  const near=m=>m.z&&m.z===zoneKey()&&(m.u===NET.uid||(Math.abs((m.x||0)-Pl.x)<=14&&Math.abs((m.y||0)-Pl.y)<=10));
+  SHEETS.chat=function(){const t=UI.chTab||'global';
+    const tabs=CH.map(([k,n])=>`<button type="button" class="btn sm ${t===k?'pri':''}" data-a="chtab" data-v="${k}">${n}</button>`).join('');
+    const can=t==='global'||t==='local';
+    const ph=t==='global'?'Mensagem para todos os jogadores online':t==='local'?'Falar com quem está perto de você':t==='loot'?'Aba de loot (somente leitura)':'Aba do sistema (somente leitura)';
+    const off=!netOn()&&can?'<p class="muted" style="margin:0 0 6px;font-size:.78rem">Global e Local funcionam no modo online.</p>':'';
+    return['Chat',`<div class="row" style="gap:4px;flex-wrap:wrap;margin-bottom:6px">${tabs}</div>${off}<div class="chatlog" id="chatlog"></div><form class="row" id="chatform43" style="margin-top:8px;flex-wrap:nowrap"><input class="txt" id="chatin43" maxlength="140" placeholder="${ph}" ${can?'':'disabled'} autocomplete="off" style="flex:1"><button class="btn pri" type="submit" ${can?'':'disabled'}>Enviar</button></form>`]};
+  ACT.chtab=v=>{UI.chTab=v;renderSheet()};
+  renderChatLog=function(){const l=$('chatlog');if(!l)return;const atEnd=l.scrollTop+l.clientHeight>=l.scrollHeight-20,t=UI.chTab||'global';let rows=[];
+    const N=NET.chat||[];
+    if(t==='global')rows=N.filter(m=>m.m&&!m.z).slice(-60).map(m=>({t:hhmm(m.t),c:m.u===NET.uid?'c-me':'c-sys',m:`${m.n}${m.l?` [${m.l}]`:''}: ${m.m}`}));
+    else if(t==='local')rows=N.filter(m=>m.m&&near(m)).slice(-60).map(m=>({t:hhmm(m.t),c:m.u===NET.uid?'c-me':'c-sys',m:`${m.n}${m.l?` [${m.l}]`:''}: ${m.m}`}));
+    else if(t==='loot')rows=(S.chat||[]).filter(c=>c.c==='c-loot');
+    else rows=(S.chat||[]).filter(c=>c.c!=='c-loot'&&!/^\[(Global|Local)\]/.test(c.m));
+    l.innerHTML=rows.map(c=>`<div class="${c.c}"><span class="t">${c.t||''}</span> ${esc(c.m)}</div>`).join('')||'<div class="muted">Sem mensagens.</div>';
+    if(atEnd)l.scrollTop=l.scrollHeight};
+  document.addEventListener('submit',async e=>{if(e.target.id!=='chatform43')return;e.preventDefault();e.stopImmediatePropagation();
+    const i=$('chatin43'),m=(i&&i.value||'').trim().slice(0,140),t=UI.chTab||'global';if(!m)return;
+    if(!netOn()){toast('Chat online indisponível agora.');return}
+    i.value='';const body={u:NET.uid,n:String(S.nome).slice(0,20),l:S.lvl,m,t:{'.sv':'timestamp'}};
+    if(t==='local'){body.z=zoneKey();body.x=Pl.x;body.y=Pl.y}
+    try{await fetch(netURL('chat'),{method:'POST',body:JSON.stringify(body)})}catch(x){toast('Não consegui enviar.')}},true);
+  let sig='';setInterval(()=>{if(!S||UI.sheet!=='chat')return;const N=NET.chat||[],s=(UI.chTab||'global')+':'+N.length+':'+((N[N.length-1]||{}).k||'')+':'+((S.chat||[]).length);if(s!==sig){sig=s;renderChatLog()}},600);
+  // o chat não aparece mais dentro de Online/Highscores: leva para o chat único
+  const _ns=ACT.netsub;ACT.netsub=function(v){if(v==='chat'){UI.chTab='global';return openSheet('chat')}return _ns.apply(this,arguments)};
+}catch(e){console.warn('eco43 chat',e)}
+
+// ---------- 6. menu sem botões repetidos ----------
+try{
+  const _menu=SHEETS.menu;
+  SHEETS.menu=function(){const [t,b]=_menu();const d=document.createElement('div');d.innerHTML=b;
+    for(const btn of d.querySelectorAll('button.mi')){if(btn.dataset.a==='open'&&['inventario','analisador','hunts','roleta','recompensas','loot'].includes(btn.dataset.v))btn.remove()}
+    return[t,d.innerHTML]};
+}catch(e){console.warn('eco43 menu',e)}
+
+// pílula "Escolher hunt" só aparece quando há hunt/treino em andamento (o botão HUNTS da barra já abre a lista)
+setInterval(()=>{try{const h=$('h-hunt');if(!h||!S)return;const p=h.closest('.hunt-pill')||h.parentElement;if(p)p.style.display=(S.hunting||S.training)?'':'none'}catch(e){}},700);
+
+// contador de jogadores online no chat do rodapé
+setInterval(()=>{try{const c=$('chatline');if(!c||!S)return;let b=$('eco43-net');if(!b){b=document.createElement('span');b.id='eco43-net';c.insertBefore(b,c.querySelector('.msg'))}
+  if(typeof netOn!=='function'||!netOn()){b.textContent='';return}
+  const n=netFresh().length+1;b.textContent=`● ${n}`;b.style.color=NET.st==='online'?'#2ecc40':'#e6c46b';b.title=`${n} jogador(es) online · ${NET.st}`}catch(e){}},1500);
+
+// ---------- 7. fora das bordas do mapa: continua como mundo aberto (espelho do terreno + névoa) ----------
+window.eco43Outside=function(g,bw,bh){
+  try{if(!Wd||!Wd.tex||Wd.hall||Wd.tower||(S&&S.hunt>=0))return;const th=Wd.theme;if(th!=='town'&&th!=='forest')return;
+    const T=Wd.tex,W=T.width,H=T.height;if(CAM.x>=0&&CAM.y>=0&&CAM.x+bw<=W&&CAM.y+bh<=H)return;
+    for(let oy=-1;oy<=1;oy++)for(let ox=-1;ox<=1;ox++){if(!ox&&!oy)continue;
+      const x0=ox<0?-W:ox>0?W:0,y0=oy<0?-H:oy>0?H:0;if(x0+W<CAM.x||x0>CAM.x+bw||y0+H<CAM.y||y0>CAM.y+bh)continue;
+      g.save();g.translate(Math.round(-CAM.x+(ox>0?2*W:0)),Math.round(-CAM.y+(oy>0?2*H:0)));g.scale(ox?-1:1,oy?-1:1);g.drawImage(T,0,0);g.restore()}
+    // escurece só o que está fora do mapa, para parecer floresta distante
+    g.save();g.fillStyle='rgba(8,14,6,.38)';const L=-CAM.x,Tp=-CAM.y,R=W-CAM.x,B=H-CAM.y;
+    g.fillRect(0,0,bw,Math.max(0,Math.min(bh,Tp)));g.fillRect(0,Math.max(0,B),bw,Math.max(0,bh-B));
+    const y1=Math.max(0,Tp),y2=Math.min(bh,B);if(y2>y1){g.fillRect(0,y1,Math.max(0,Math.min(bw,L)),y2-y1);g.fillRect(Math.max(0,R),y1,Math.max(0,bw-R),y2-y1)}
+    g.restore()}catch(e){}};
+})();
 
 </script>
