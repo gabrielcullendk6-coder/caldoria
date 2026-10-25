@@ -949,7 +949,7 @@ function killMob(m){
   const C=k=>S.charms[k]||0,parts=[];let val=0;
   const gold=Math.round(ri(0,m.d.gold)*(1+.1*C('ouro')));if(gold){S.gold+=gold;val+=gold;parts.push(`${gold} moedas de ouro`);addItemStat('gold',gold)}
   for(const [id,ch,mx] of m.d.loot){if(Math.random()*100<ch*(1+.1*C('loot'))){if(S.skip[id])continue;const n=ri(1,mx);gainLoot(id,n);val+=ITEMS[id].value*n;parts.push(n>1?`${n} ${ITEMS[id].nome}`:ITEMS[id].nome)}}
-  if(Math.random()<(m.d.boss?1:.012*(1+.1*C('loot')))){const H=HUNTS[S.hunt];const pool=eqPool(H.tier);const id=Math.random()<.45?`${VOC[S.voc].wtype}_${H.tier}`:pick(pool);
+  if(Math.random()<(m.d.boss?1:.005*(1+.1*C('loot')))){const H=HUNTS[S.hunt];const pool=eqPool(H.tier);const id=Math.random()<.45?`${VOC[S.voc].wtype}_${H.tier}`:pick(pool);
     if(!S.skip[id]){S.bag[id]=(S.bag[id]||0)+1;addItemStat(id,1);val+=ITEMS[id].value;parts.push(ITEMS[id].nome);LIVE.sheet=1}}
   S.an.loot+=val;S.rate.loot+=val;
   msg(`Loot de ${m.d.nome.toLowerCase()}: ${parts.length?parts.join(', '):'nada'}.`);
@@ -1191,7 +1191,8 @@ function build(){
     <button class="rb" id="b-home" data-a="home" title="Templo"><img src="${icon('templo')}" alt=""></button>
     <button class="rb" data-a="open" data-v="roleta" title="Roleta"><img src="${icon('roleta')}" alt=""><span class="bdg" id="b-wheel" hidden>1</span></button>
     <button class="rb" data-a="open" data-v="recompensas" title="Recompensas de nível"><img src="${icon('presente')}" alt=""><span class="bdg" id="b-rew" hidden></span></button>
-    <button class="rb" data-a="open" data-v="loot" title="Bolsa de loot"><img src="${icon('mochila')}" alt=""></button>`;
+    <button class="rb" data-a="open" data-v="viagem" title="Viagem rápida"><img src="${micon('mapa')}" alt=""></button>
+    <button class="rb" data-a="open" data-v="autoboss" title="Auto Boss (VIP)"><img src="${micon('coroa')}" alt=""></button>`;
   $('nav').innerHTML=[['inventario','Inventário','mochila'],['analisador','Analisador','analisador'],['hunts','HUNTS','hunts',1],['mercado','Mercado','moeda'],['menu','Menu','menu']]
     .map(([k,n,ic,mid])=>`<button data-a="open" data-v="${k}" class="${mid?'mid':''}" id="n-${k}">${mid?`<span class="hex"><img src="${icon(ic)}" alt=""></span>`:`<img src="${icon(ic)}" alt="">`}<span>${n}</span></button>`).join('');
   buildBars();
@@ -6131,7 +6132,7 @@ function tibiaApply(force){if(!S)return;if(S!==lastS){lastS=S;bootT=performance.
   if(force||(!S.ui.tibiaInit&&performance.now()-bootT>2500)){S.ui.tibiaInit=1;const w=wg2S(),P0=WGP();for(const k of Object.keys(WG2)){w[k].open=0}
     const rx=innerWidth-RW+8,rw=RW-16,lx=8,lw=LW-16;let y=150;
     const place=(k,x,yy,ww,hh)=>{w[k].open=1;w[k].min=0;P0[k]={x,y:yy,w:ww,h:hh}};
-    place('eq',rx,y,rw,204);y+=212;place('sk',rx,y,rw,Math.max(140,Math.round(innerHeight*.3)));y+=Math.max(140,Math.round(innerHeight*.3))+8;place('bat',rx,y,rw,Math.max(90,innerHeight-y-CH-16));
+    place('eq',rx,y,rw,232);y+=240;place('sk',rx,y,rw,Math.max(140,Math.round(innerHeight*.3)));y+=Math.max(140,Math.round(innerHeight*.3))+8;place('bat',rx,y,rw,Math.max(90,innerHeight-y-CH-16));
     place('bag',lx,LW+72,lw,Math.round(innerHeight*.28));place('an',lx,LW+72+Math.round(innerHeight*.28)+8,lw,Math.max(110,Math.round(innerHeight*.2)));
     save();wg2Render()}}
 window.tibiaApply=tibiaApply;addEventListener("resize",()=>setTimeout(()=>tibiaApply(false),80));setInterval(()=>{if(S)tibiaApply(false)},1500);
@@ -6149,5 +6150,216 @@ body.tibia #npcbtn{left:10px!important;top:calc(var(--tLW) + 2px)!important;bott
 body.tibia #cv{clip-path:inset(0 var(--tRW) 0 var(--tLW))}
 `;document.head.appendChild(stl);
 })();
+
+</script>
+<script id="eco47-js">
+// ===== v47: punho sem arma, menu do botão direito, zoom dos painéis, economia, viagem rápida, auto boss VIP, GOD completo, mobile =====
+(function(){
+const css=document.createElement('style');css.id='eco47-css';css.textContent=`
+#ctxm{position:fixed;z-index:60;min-width:170px;background:#1b1610;border:2px solid #4a3d2e;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.6);padding:3px;font:600 .8rem var(--f-b,system-ui)}
+#ctxm[hidden]{display:none}
+#ctxm b{display:block;padding:4px 8px;color:#c9a24a;border-bottom:1px solid #3a3025;margin-bottom:2px;font-size:.78rem}
+#ctxm button{display:block;width:100%;text-align:left;background:none;border:0;color:#e8dcc0;padding:6px 8px;border-radius:3px;font:inherit;cursor:pointer}
+#ctxm button:hover,#ctxm button:active{background:#3b2f20}
+.wgz{background:none;border:1px solid #4a3d2e;border-radius:3px;color:#c9a24a;font:700 10px/1 var(--f-m);padding:2px 4px;margin-right:2px;cursor:pointer}
+.wgre{position:absolute;top:18px;right:-4px;bottom:18px;width:10px;cursor:ew-resize;touch-action:none;z-index:2}
+.wgbe{position:absolute;left:18px;right:18px;bottom:-4px;height:10px;cursor:ns-resize;touch-action:none;z-index:2}
+.wgrip{width:22px!important;height:22px!important}
+#wg2 section.wgt.fl>.wb{zoom:var(--wz,1)}
+body.sidebot .bars2 #side{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;justify-content:flex-start;position:static}
+.e47-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}.e47-tabs button.on{border-color:var(--gold);background:#2a2113}
+.e47-list{max-height:46vh;overflow:auto}
+.e47-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #241e18;font-size:.82rem}.e47-row .t{flex:1;min-width:0}.e47-row small{display:block;color:#9a917e}
+@media (max-width:760px){
+ :root{--navh:54px}
+ body:not(.tibia) #hud{transform:scale(.74);transform-origin:top left}
+ body:not(.tibia) #wg2 section.wgt{max-width:46vw}
+ body:not(.tibia) #dock .slot{width:40px!important;height:40px!important;min-width:0!important;border-radius:8px}
+ body:not(.tibia) #dock .slot b,body:not(.tibia) #dock .slot span{font-size:.55rem!important}
+ body:not(.tibia) #dock .slot.master{width:46px!important}
+ body:not(.tibia) .rb{width:36px;height:36px}
+ body:not(.tibia) .rb img{width:22px;height:22px}
+ body:not(.tibia) .bars2{padding:4px;gap:4px;border-radius:10px}
+ body:not(.tibia) .arow{gap:4px}
+ body:not(.tibia) #chatline{min-height:26px;font-size:.72rem;padding-block:2px}
+ body:not(.tibia) #nav button{font-size:.62rem}
+ body:not(.tibia) #nav img{width:22px;height:22px}
+ body:not(.tibia) #minimap{transform:scale(.68);transform-origin:bottom right}
+ body:not(.tibia) #zbar button{width:30px;height:30px}
+ #ctxm{font-size:.9rem}
+}
+`;document.head.appendChild(css);
+const now=()=>Date.now();
+
+// ---------- sem arma = punho ----------
+try{
+  const _upd=update;update=function(dt){if(S&&VOC[S.voc]){const v=VOC[S.voc];if(v._r==null)v._r=v.range;v.range=weapon()?v._r:1}_upd(dt)};
+  const _ba=baseAttack;baseAttack=function(d,t){
+    if(S&&!weapon()&&t&&!(t.id==='boneco'&&S.training)){
+      if(cheb(Pl,t)>1)return;const f=S.sk&&S.sk.fist?S.sk.fist.v:10;face(Pl,t.x-Pl.x,t.y-Pl.y);
+      let dmg=rnd(.35,1)*(.1*5*f+d.L/4+4)*d.dmgP;const el='phys';if(Math.random()*100<d.crit)dmg*=1.5;
+      fx(t.x,t.y,'hit');addTries('fist',1);dmgMob(t,Math.max(1,dmg),el,false);return}
+    return _ba.apply(this,arguments)};
+}catch(e){console.warn('eco47 fist',e)}
+
+// ---------- trainer online rende menos que a arma de exercício ----------
+try{
+  const _ba2=baseAttack;baseAttack=function(d,t){
+    if(t&&t.id==='boneco'&&S.onlineTraining&&S.training){const v=VOC[S.voc],w=v.wtype;face(Pl,t.x-Pl.x,t.y-Pl.y);t.hitT=.15;
+      if(w==='arco')Wd.proj.push({x0:Pl.x,y0:Pl.y,x1:t.x,y1:t.y,t:0,dur:.2,col:'#e8e0c8',arrow:1});
+      else if(w==='varinha'||w==='cajado'){const el=w==='varinha'?'energy':'ice';Wd.proj.push({x0:Pl.x,y0:Pl.y,x1:t.x,y1:t.y,t:0,dur:.22,col:EL[el][1]})}else fx(t.x,t.y,'hit');
+      addTries(v.skill==='ml'?'ml':v.skill,(v.skill==='ml'?EX_ML:EX_TRY)*.4);return}   // x0,25 da camada antiga = 10% da arma de exercício
+    return _ba2.apply(this,arguments)};
+  const _tr=SHEETS.trainer;SHEETS.trainer=function(){const r=_tr();r[1]=r[1].replace('25% do treino comum','10% do treino com arma de exercício').replace('Mais rápida, separada deste sistema','Investimento: rende 10 vezes mais por golpe');return r};
+}catch(e){}
+
+// ---------- economia: menos ouro e itens, ainda menos nos valiosos ----------
+try{
+  const cm=v=>v<50?.7:v<300?.5:v<1500?.35:v<8000?.22:.12;
+  const _km=killMob;killMob=function(m){const d0=m.d;
+    if(d0&&!d0.boss&&d0.loot){const gm=d0.gold>400?.4:.55;m.d=Object.assign({},d0,{gold:Math.round((d0.gold||0)*gm),loot:d0.loot.map(([id,ch,mx])=>{const v=ITEMS[id]?ITEMS[id].value:0;return[id,ch*cm(v),Math.max(1,Math.ceil(mx*.6))]})});
+      try{_km(m)}finally{m.d=d0}return}
+    return _km.apply(this,arguments)};
+}catch(e){console.warn('eco47 econ',e)}
+
+// ---------- arrastar: zoom por painel e bordas para redimensionar ----------
+try{
+  const WGP=()=>{S.ui=S.ui||{};return S.ui.wgp=S.ui.wgp||{}};
+  const _w=wg2Render;wg2Render=function(){if(window.eco46Drag)return;_w.apply(this,arguments);try{
+    const P0=WGP();document.querySelectorAll('#wg2 section.wgt').forEach(sec=>{const k=sec.dataset.w,p=P0[k];
+      if(!sec.querySelector('.wgre')){sec.insertAdjacentHTML('beforeend','<i class="wgre"></i><i class="wgbe"></i>')}
+      const hd=sec.querySelector('header');if(hd&&!hd.querySelector('.wgz')){const bt=hd.querySelector('button');const h='<button class="wgz" data-wz="-1" title="Diminuir conteúdo">A−</button><button class="wgz" data-wz="1" title="Aumentar conteúdo">A+</button>';if(bt)bt.insertAdjacentHTML('beforebegin',h);else hd.insertAdjacentHTML('beforeend',h)}
+      sec.style.setProperty('--wz',(p&&p.z)||1)})}catch(e){}};
+  document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.wgz');if(!b)return;e.stopImmediatePropagation();e.preventDefault();const k=b.closest('.wgt').dataset.w,P0=WGP();P0[k]=P0[k]||(()=>{const r=b.closest('.wgt').getBoundingClientRect();return{x:r.left,y:r.top,w:r.width,h:r.height}})();P0[k].z=Math.max(.6,Math.min(2.2,Math.round(((P0[k].z||1)+(+b.dataset.wz)*.15)*100)/100));save();wg2Render()},true);
+  document.addEventListener('wheel',e=>{if(!e.ctrlKey)return;const sec=e.target.closest&&e.target.closest('#wg2 .wgt.fl');if(!sec)return;e.preventDefault();const k=sec.dataset.w,P0=WGP();if(!P0[k])return;P0[k].z=Math.max(.6,Math.min(2.2,(P0[k].z||1)+(e.deltaY<0?.1:-.1)));wg2Render()},{passive:false});
+  document.addEventListener('pointerdown',e=>{const re=e.target.closest&&e.target.closest('.wgre,.wgbe');if(!re)return;const sec=re.closest('.wgt'),k=sec.dataset.w,r=sec.getBoundingClientRect(),P0=WGP();e.preventDefault();e.stopPropagation();window.eco46Drag=1;
+    P0[k]=P0[k]||{x:r.left,y:r.top,w:r.width,h:r.height};const p=P0[k],sx=e.clientX,sy=e.clientY,o={w:p.w,h:p.h},horiz=re.classList.contains('wgre');sec.classList.add('fl');
+    const mv=ev=>{if(horiz)p.w=Math.max(110,Math.min(innerWidth-p.x,o.w+ev.clientX-sx));else p.h=Math.max(70,Math.min(innerHeight-p.y,o.h+ev.clientY-sy));sec.style.width=p.w+'px';sec.style.height=p.h+'px'};
+    const up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);window.eco46Drag=0;try{save()}catch(x){}setTimeout(()=>wg2Render(),30)};addEventListener('pointermove',mv);addEventListener('pointerup',up)},true);
+  // em tela pequena os painéis salvos do PC não valem
+  const _af=wg2Render;wg2Render=function(){if(innerWidth<900&&S&&S.ui&&S.ui.wgp&&!S.ui._wgpSaved){S.ui._wgpSaved=S.ui.wgp;S.ui.wgp={}}else if(innerWidth>=900&&S&&S.ui&&S.ui._wgpSaved){S.ui.wgp=S.ui._wgpSaved;delete S.ui._wgpSaved}_af.apply(this,arguments)};
+}catch(e){console.warn('eco47 zoom',e)}
+
+// ---------- menu do botão direito (estilo Tibia) ----------
+try{
+  const ctx=document.createElement('div');ctx.id='ctxm';ctx.hidden=true;document.body.appendChild(ctx);
+  const show=(x,y,title,items)=>{ctx.innerHTML=`<b>${esc(title)}</b>`+items.map((it,i)=>`<button data-i="${i}">${it[0]}</button>`).join('');ctx._it=items;ctx.hidden=false;const w=ctx.offsetWidth,h=ctx.offsetHeight;ctx.style.left=Math.max(4,Math.min(innerWidth-w-4,x))+'px';ctx.style.top=Math.max(4,Math.min(innerHeight-h-4,y))+'px'};
+  ctx.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const it=ctx._it[+b.dataset.i];ctx.hidden=true;if(it)it[1]()});
+  document.addEventListener('pointerdown',e=>{if(!ctx.hidden&&!e.target.closest('#ctxm'))ctx.hidden=true},true);addEventListener('keydown',e=>{if(e.key==='Escape')ctx.hidden=true});
+  document.addEventListener('contextmenu',e=>{if(e.target.closest&&e.target.closest('input,textarea,[contenteditable]'))return;e.preventDefault()});
+  const look=m=>{const d=m.d,res=Object.entries(d.res||{}).filter(([,v])=>v).map(([k,v])=>`${EL[k]?EL[k][0]:k} ${v>0?'+':''}${v}%`).join(', ');msg(`Você vê ${d.nome}. Vida ${fmtN(Math.round(m.hp))}/${fmtN(Math.round(m.max||d.hp))}, ${fmtN(d.xp)} xp.${res?` Resistências: ${res}.`:''}`,'c-sys');toast(d.nome)};
+  const open=(cx,cy)=>{if(!S||!Wd)return;const wx=CAM.x+cx*DPR/SCALE,wy=CAM.y+cy*DPR/SCALE,tx=Math.floor(wx/TS),ty=Math.floor(wy/TS),items=[];let title='Mapa';
+    const m=Wd.mobs.find(m=>m.x===tx&&m.y===ty)||Wd.mobs.find(m=>cheb(m,{x:tx,y:ty})<=1&&m.d.boss);
+    const g=(window.GHOSTS||[]).find(p=>Math.abs(wx-(p.rx*TS+16))<=18&&Math.abs(wy-(p.ry*TS+16))<=24);
+    const n=(Wd.npcs||[]).find(n=>n.x===tx&&(n.y===ty||n.y===ty+1));
+    if(m){title=m.d.nome;items.push(['⚔ Atacar',()=>{Pl.target=m;Pl.chase=true}],['🔍 Olhar',()=>look(m)],['📖 Bestiário',()=>{UI.sub='best';openSheet('hunts')}])}
+    else if(g){title=g.n+' ['+g.l+']';items.push(['🔍 Olhar',()=>msg(`Você vê ${g.n} (nível ${g.l}, ${g.hp||0}% de vida).${g.sk>0?' Tem caveira.':''}`,'c-sys')],['⚔ Atacar (PvP)',()=>setPvpTarget&&setPvpTarget(g.uid)],['👥 Convidar para party',()=>partyInvite(g.uid)],['📋 Copiar nome',()=>{try{navigator.clipboard.writeText(g.n)}catch(x){};toast('Nome copiado')}])}
+    else if(n){title=n.nome||n.name||'NPC';items.push(['💬 Falar',()=>{if(cheb(Pl,n)<=2)npcTalk(n);else{walkTo(n.x,n.y+1);toast('Chegue perto para falar.')}}],['🔍 Olhar',()=>msg(`Você vê ${title}.`,'c-sys')])}
+    else if(tx===Pl.x&&(ty===Pl.y||ty===Pl.y-1||ty===Pl.y+1)){title=S.nome;items.push(['🎒 Mochila e equipamento',()=>openSheet('inventario')],['👕 Roupa e montaria',()=>openSheet('visual')],['📊 Ficha',()=>openSheet('ficha')],['🛑 Parar ataque',()=>{Pl.target=null;Pl.pt=null;Pl.path=[];toast('Parado.')}],[S.auto?'⏸ Pausar caça automática':'▶ Ligar caça automática',()=>ACT.auto&&ACT.auto()])}
+    else if(!isWall(tx,ty)){title='Chão';items.push(['🚶 Andar até aqui',()=>walkTo(tx,ty)])}
+    else return;
+    show(cx,cy,title,items)};
+  cv.addEventListener('contextmenu',e=>{e.preventDefault();open(e.clientX,e.clientY)});
+  let lp=null,lx=0,ly=0;cv.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')return;lx=e.clientX;ly=e.clientY;clearTimeout(lp);lp=setTimeout(()=>{lp=null;const wx=CAM.x+lx*DPR/SCALE+8,wy=CAM.y+ly*DPR/SCALE+8,tx=Math.floor(wx/TS),ty=Math.floor(wy/TS);if(tx===Pl.x&&Math.abs(ty-Pl.y)<=1)return;open(lx,ly)},650)});
+  const cl=e=>{if(lp&&(e.type!=='pointermove'||Math.hypot(e.clientX-lx,e.clientY-ly)>10)){clearTimeout(lp);lp=null}};cv.addEventListener('pointerup',cl);cv.addEventListener('pointercancel',cl);cv.addEventListener('pointermove',cl);
+}catch(e){console.warn('eco47 ctx',e)}
+
+// ---------- monstros: movimento suave + comportamento mais inteligente ----------
+try{
+  let FR=0;const _dw=draw;draw=function(){FR++;return _dw.apply(this,arguments)};
+  const _ep=epos;epos=function(e){const p=_ep(e);if(!e||!e.d||e===Pl||e.id==='boneco')return p;
+    if(e._sf!==FR){const t=performance.now(),dt=Math.min(.1,(t-(e._st||t))/1000);e._st=t;if(e._sx==null||Math.hypot(p[0]-e._sx,p[1]-e._sy)>TS*3){e._sx=p[0];e._sy=p[1]}else{const k=1-Math.exp(-dt*16);e._sx+=(p[0]-e._sx)*k;e._sy+=(p[1]-e._sy)*k}e._sf=FR}
+    return[e._sx,e._sy]};
+  const _ma=mobAI;mobAI=function(dt){_ma(dt);try{if(!Wd||S.hunt<0||S.hunt>=0&&HUNTS[S.hunt]&&HUNTS[S.hunt].tower)return;const t=performance.now()/1000;
+    for(const m of Wd.mobs){if(m.id==='boneco'||m.d.boss||m.p<1||m.globalBoss)continue;const c=cheb(m,Pl),spd=1/(m.d.spd||2);
+      // fuga com pouca vida
+      if(m._fl&&t<m._fl){awayStep(m,spd*.9);continue}
+      if(!m._fz&&m.hp<m.max*.18&&Math.random()<.35){m._fz=1;m._fl=t+2.5;awayStep(m,spd*.9);continue}
+      // atirador mantém distância
+      if(m.d.ranged&&c<=2&&c>0&&Math.random()<.5){awayStep(m,spd);continue}
+      // longe do jogador: vagueia perto de onde está
+      const dd=Wd.dist[m.y*Wd.w+m.x];if((dd<0||dd>9)&&Math.random()<dt*.5){const dr=pick(DIRS);if(canStep(m.x,m.y,dr[0],dr[1])&&(!m.sp||Math.abs(m.x+dr[0]-m.sp.x)<=3&&Math.abs(m.y+dr[1]-m.sp.y)<=3))moveEnt(m,dr[0],dr[1],spd*1.4)}}}catch(e){}};
+  function awayStep(m,dur){let best=null,bd=Wd.dist[m.y*Wd.w+m.x];for(const [dx,dy] of DIRS){if(!canStep(m.x,m.y,dx,dy))continue;const d=Wd.dist[(m.y+dy)*Wd.w+m.x+dx];if(d>bd){bd=d;best=[dx,dy]}}if(best)moveEnt(m,best[0],best[1],dur)}
+}catch(e){console.warn('eco47 ai',e)}
+
+// ---------- viagem rápida ----------
+SHEETS.viagem=function(){const here=S.city||'pedra',vip=vipOn();
+  return['Viagem rápida',`<p class="muted" style="margin:0 0 8px">Viaje na hora entre cidades. ${vip?'<b class="gold">VIP: grátis.</b>':'Sem VIP custa ouro (VIPs viajam de graça).'} Só funciona fora das hunts.</p><div class="e47-list">${CITY_ORDER.map(c=>{const C=CITIES[c],f=fastFare(here,c),lock=S.lvl<(C.lvl||0);return`<div class="e47-row"><div class="t"><b>${C.nome}</b><small>${C.lvl?`nível ${C.lvl}+ · `:''}${c===here?'você está aqui':vip?'grátis (VIP)':fmtK(f)+' gp'}</small></div><button class="btn sm pri" data-a="fasttrav" data-v="${c}" ${c===here||lock||(!vip&&S.gold<f)?'disabled':''}>Viajar</button></div>`}).join('')}</div>`]};
+ACT.fasttrav=c=>{if(S.hunt>=0||S.trainRoom){toast('Saia da hunt para viajar.');return}travelTo(c,'fast')};
+
+// ---------- auto boss (VIP) ----------
+const AB=()=>{S.ab=S.ab||{on:false,list:[]};return S.ab};
+SHEETS.autoboss=function(){const ab=AB(),vip=vipOn();S.bossCd=S.bossCd||{};
+  if(!vip)return['Auto Boss','<p>O <b>Auto Boss</b> é exclusivo para VIP. Ative o Premium (VIP) no menu.</p>'];
+  const rows=BOSSES.map(b=>{const m=MOBS[b.id],left=(S.bossCd[b.id]||0)-now(),sel=ab.list.indexOf(b.id),ok=S.lvl>=b.lvl;
+    return`<div class="e47-row"><img src="${mobURL(b.id)}" alt="" style="width:36px;height:36px;image-rendering:pixelated"><div class="t"><b>${m.nome}</b><small>nível ${b.lvl}+ ${!ok?'· <span class="bad">nível insuficiente</span>':left>0?`· volta em ${fmtH(left/1000)}`:'· disponível'}${sel>=0?` · fila #${sel+1}`:''}</small></div><button class="btn sm ${sel>=0?'pri':''}" data-a="abtoggle" data-v="${b.id}" ${ok?'':'disabled'}>${sel>=0?'Remover':'Escolher'}</button></div>`}).join('');
+  return['Auto Boss',`<p class="muted" style="margin:0 0 8px">Escolha os bosses. Quando ligado, o jogo vai sozinho até o primeiro boss da fila que estiver liberado (nível e tempo de espera), luta, sai pelo portal e passa para o próximo.</p><div class="row" style="gap:6px;margin-bottom:8px"><button class="btn ${ab.on?'pri':''}" data-a="abpower">${ab.on?'Ligado · tocar para desligar':'Desligado · tocar para ligar'}</button><button class="btn sm" data-a="abclear">Limpar fila</button></div><div class="e47-list">${rows}</div>`]};
+ACT.abpower=()=>{if(!vipOn())return toast('Auto Boss é só para VIP.');AB().on=!AB().on;AB()._next=0;save();renderSheet();toast(AB().on?'Auto Boss ligado':'Auto Boss desligado')};
+ACT.abclear=()=>{AB().list=[];save();renderSheet()};
+ACT.abtoggle=id=>{const ab=AB(),i=ab.list.indexOf(id);if(i>=0)ab.list.splice(i,1);else ab.list.push(id);save();renderSheet()};
+setInterval(()=>{try{if(!S||!S.ab||!S.ab.on)return;const ab=S.ab;if(!vipOn()){ab.on=false;return}
+  const H=S.hunt>=0&&HUNTS[S.hunt];
+  if(H&&H.arena){S.auto=true;const alive=Wd.arenaBoss&&Wd.mobs.includes(Wd.arenaBoss);if(!alive){ab._done=ab._done||now();if(now()-ab._done>4500){ab._done=0;ab._next=now()+3000;leaveCave()}}else ab._done=0;return}
+  if(S.hunt>=0||S.trainRoom||S.hp<=0||UI.sheet==='autoboss'&&false)return;
+  if(now()<(ab._next||0))return;const d=D();if(S.hp<d.hp*.7)return;S.bossCd=S.bossCd||{};
+  for(const id of ab.list){const b=BOSSES.find(x=>x.id===id);if(!b||S.lvl<b.lvl||(S.bossCd[id]||0)>now())continue;ab._next=now()+9000;if(startHunt(b.hunt)!==false){S.auto=true;msg(`Auto Boss: indo enfrentar ${MOBS[id].nome}.`,'c-sys')}return}
+  if(!ab._idleMsg||now()-ab._idleMsg>600000){ab._idleMsg=now();msg('Auto Boss: nenhum boss da fila está liberado agora. Vou tentar de novo quando o tempo de espera acabar.','c-sys')}
+}catch(e){}},2000);
+
+// ---------- barra de baixo: botões na mesma área, sem bolsa de loot ----------
+try{
+  sideApply=function(){const on=sideBot(),side=$('side'),dock=$('dock');if(!side||!dock)return;document.body.classList.toggle('sidebot',on);const b2=dock.querySelector('.bars2');
+    if(on&&b2){if(side.parentElement!==b2)b2.appendChild(side)}else if(on){if(side.parentElement!==dock)dock.insertBefore(side,dock.firstChild)}else if(side.parentElement!==document.body)document.body.insertBefore(side,$('joy'));
+    const ab=$('b-auto');if(ab&&S)ab.style.setProperty('--auto-c',S.auto?'#2ecc40':'#3a3a3a')};
+}catch(e){}
+// menu: entradas novas
+try{const _m=SHEETS.menu;SHEETS.menu=function(){const [t,b]=_m();const d=document.createElement('div');d.innerHTML=b;const first=d.querySelector('button.mi[data-v="pvp"]')||d.querySelector('button.mi[data-a="openboss"]');
+  const add=`<button class="mi" data-a="open" data-v="viagem"><img src="${micon('mapa')}" alt="">Viagem rápida</button><button class="mi" data-a="open" data-v="autoboss"><img src="${micon('coroa')}" alt="">Auto Boss${vipOn()?'':' (VIP)'}</button>`;
+  if(first)first.insertAdjacentHTML('beforebegin',add);return[t,d.innerHTML]}}catch(e){}
+
+// ---------- CHAR GOD completo ----------
+try{
+  const G=()=>isGod();
+  const tabs=[['pj','Personagem'],['item','Itens'],['mundo','Mundo'],['mob','Criaturas'],['jog','Jogadores'],['srv','Servidor']];
+  SHEETS.god=function(){if(!G())return['Acesso negado','<p>Somente o CHAR GOD.</p>'];const t=UI.gtab||'pj';let body='';
+    const B=(a,l,v,on)=>`<button class="btn sm ${on?'pri':''}" data-a="${a}" ${v!=null?`data-v="${v}"`:''}>${l}</button>`;
+    if(t==='pj'){body=`<div class="row" style="gap:6px;flex-wrap:wrap">${B('godmode','God mode: '+(S.god?'ligado':'desligado'),null,S.god)}${B('godohk','Matar com 1 golpe: '+(S.godOHK?'ligado':'desligado'),null,S.godOHK)}${B('godheal','Vida e mana cheias')}${B('godvip','VIP: '+(S.vip?'ligado':'desligado'),null,S.vip)}${B('godspd','Velocidade ×'+(S.godSpd||1),null,S.godSpd>1)}</div>
+      <h3>Nível</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[1,10,50,100,500].map(n=>B('godlvl','+'+n,n)).join('')}${B('godlvlset','Definir…')}</div>
+      <h3>Skills (+10)</h3><div class="row" style="gap:6px;flex-wrap:wrap">${Object.keys(S.sk).map(k=>B('godsk',(SKN[k]||k)+' '+S.sk[k].v,k)).join('')}</div>
+      <h3>Dinheiro</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[1e5,1e6,1e8].map(n=>B('godgold','+'+fmtK(n),n)).join('')}${B('godcharm','+1000 charm')}${B('godcd','Zerar tempos de boss')}${B('godpk','Zerar frags')}${B('godstat','Restaurar vida/mana ilimitada','x',S.godInf)}</div>`}
+    else if(t==='item'){const q=(UI.gq||'').toLowerCase(),ids=Object.keys(ITEMS).filter(i=>!q||ITEMS[i].nome.toLowerCase().includes(q)||i.includes(q)).slice(0,40);
+      body=`<input class="txt" id="godq" placeholder="Buscar item pelo nome" value="${esc(UI.gq||'')}" style="width:100%;margin-bottom:6px"><div class="e47-list">${ids.map(i=>`<div class="e47-row"><img src="${itemIcon(i)}" alt="" style="width:30px;height:30px;image-rendering:pixelated"><div class="t"><b>${esc(ITEMS[i].nome)}</b><small>${i}</small></div>${[1,10,100].map(n=>B('godgive','+'+n,i+'|'+n)).join('')}</div>`).join('')||'<div class="muted">Nada encontrado.</div>'}</div>`}
+    else if(t==='mundo'){body=`<h3>Cidades</h3><div class="row" style="gap:6px;flex-wrap:wrap">${CITY_ORDER.map(c=>B('godcity',CITIES[c].nome,c)).join('')}</div><h3>Hunts e bosses</h3><div class="e47-list">${HUNTS.map((h,i)=>({h,i})).filter(({h})=>!h.tower||true).map(({h,i})=>`<div class="e47-row"><div class="t"><b>${esc(h.nome)}</b><small>nível ${h.lvl}${h.arena?' · boss':''}</small></div>${B('godhunt','Ir',i)}</div>`).join('')}</div><div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px">${B('bossgo','Chefe Global')}${B('godspawn','Invocar Chefe Global')}${B('trainergo','Sala de treino')}${B('home','Templo')}${B('godkill','Matar todas as criaturas')}</div>`}
+    else if(t==='mob'){const q=(UI.gq||'').toLowerCase(),ids=Object.keys(MOBS).filter(i=>!q||MOBS[i].nome.toLowerCase().includes(q)).slice(0,40);
+      body=`<input class="txt" id="godq" placeholder="Buscar criatura" value="${esc(UI.gq||'')}" style="width:100%;margin-bottom:6px"><div class="e47-list">${ids.map(i=>`<div class="e47-row"><img src="${mobURL(i)}" alt="" style="width:30px;height:30px;image-rendering:pixelated"><div class="t"><b>${esc(MOBS[i].nome)}</b><small>vida ${fmtK(MOBS[i].hp)} · ${fmtK(MOBS[i].xp)} xp</small></div>${B('godmob','Criar',i)}</div>`).join('')}</div>`}
+    else if(t==='jog'){let rows='';try{for(const [u,p] of netFresh())rows+=`<div class="e47-row"><div class="t"><b>${esc(p.n)} [${p.l}]</b><small>${p.z||''}</small></div>${B('godkick','Expulsar',u)}</div>`}catch(e){}
+      body=`<div class="e47-list">${rows||'<div class="muted">Ninguém online agora.</div>'}</div>`}
+    else{body=`<form id="godbroadcast" class="row"><input class="txt" id="godmsg" maxlength="140" placeholder="Anúncio global" style="flex:1"><button class="btn pri">Anunciar</button></form><h3>Multiplicador de XP (só para você)</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,5,10].map(n=>B('godxp','×'+n,n,(S.godXp||1)===n)).join('')}</div><h3>Drops</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[1,2,5].map(n=>B('goddrop','×'+n,n,(S.godDrop||1)===n)).join('')}</div>`}
+    return['CHAR GOD · Administração',`<div class="e47-tabs">${tabs.map(([k,n])=>`<button class="btn sm ${t===k?'on':''}" data-a="godtab" data-v="${k}">${n}</button>`).join('')}</div>${body}`]};
+  const gg=f=>(...a)=>{if(isGod())f(...a)};
+  ACT.godtab=gg(v=>{UI.gtab=v;UI.gq='';renderSheet()});
+  ACT.godohk=gg(()=>{S.godOHK=!S.godOHK;renderSheet()});ACT.godvip=gg(()=>{S.vip=!S.vip;renderSheet()});ACT.godspd=gg(()=>{S.godSpd=S.godSpd>=3?1:(S.godSpd||1)+1;renderSheet()});
+  ACT.godlvl=gg(n=>{for(let i=0;i<+n;i++)gainExp(Math.max(1,expFor(S.lvl+1)-S.exp));netRank(true);renderSheet()});
+  ACT.godlvlset=gg(()=>{const v=parseInt(prompt('Nível desejado:',S.lvl),10);if(v>S.lvl){let g=0;while(S.lvl<v&&g++<4000)gainExp(Math.max(1,expFor(S.lvl+1)-S.exp));netRank(true);renderSheet()}});
+  ACT.godsk=gg(k=>{S.sk[k].v+=10;S.sk[k].t=0;save();renderSheet()});
+  ACT.godgold=gg(n=>{S.gold+=+n;save();hud();renderSheet()});ACT.godcharm=gg(()=>{S.charmPts=(S.charmPts||0)+1000;save();renderSheet()});
+  ACT.godcd=gg(()=>{S.bossCd={};save();toast('Tempos zerados')});ACT.godpk=gg(()=>{if(S.pk)S.pk.frags=[];S.pk&&(S.pk.white=0);toast('Frags zerados')});
+  ACT.godstat=gg(()=>{S.godInf=!S.godInf;renderSheet()});
+  ACT.godgive=gg(v=>{const [i,n]=String(v).split('|');if(!ITEMS[i])return;S.bag[i]=(S.bag[i]||0)+(+n);save();toast(`+${n} ${ITEMS[i].nome}`)});
+  ACT.godcity=gg(c=>{closeSheet();arriveCity(c,null,'CHAR GOD foi para')});
+  ACT.godhunt=gg(i=>{const h=HUNTS[+i],sv=S.lvl;closeSheet();if(S.lvl<h.lvl)S.lvl=h.lvl;try{if(S.bossCd&&h.boss)S.bossCd[h.boss]=0;startHunt(+i)}finally{S.lvl=sv}});
+  ACT.godkill=gg(()=>{for(const m of Wd.mobs.slice())if(m.id!=='boneco')killMob(m)});
+  ACT.godmob=gg(i=>{let x=Pl.x+2,y=Pl.y;for(let r=1;r<6;r++){let f=false;for(let dy=-r;dy<=r&&!f;dy++)for(let dx=-r;dx<=r&&!f;dx++)if(free(Pl.x+dx,Pl.y+dy)&&(dx||dy)){x=Pl.x+dx;y=Pl.y+dy;f=true}if(f)break}addMob(i,x,y);toast('Criado: '+MOBS[i].nome)});
+  ACT.godkick=gg(u=>{try{worldSend({pt:'adminKick',to:u})}catch(e){}toast('Expulsão enviada')});
+  ACT.godxp=gg(n=>{S.godXp=+n;renderSheet()});ACT.goddrop=gg(n=>{S.godDrop=+n;renderSheet()});
+  document.addEventListener('input',e=>{if(e.target.id==='godq'){UI.gq=e.target.value;const p=e.target.selectionStart;renderSheet();const i=$('godq');if(i){i.focus();i.setSelectionRange(p,p)}}});
+  const _D=D;D=function(){const d=_D.apply(this,arguments);if(S&&S.godSpd>1&&d.tps)d.tps*=S.godSpd;return d};
+  const _dm=dmgMob;dmgMob=function(m,raw,el,crit){if(S&&S.godOHK&&m&&m.id!=='boneco')raw=1e12;return _dm.call(this,m,raw,el,crit)};
+  const _gx=gainExp;gainExp=function(n){return _gx(S&&S.godXp>1?n*S.godXp:n)};
+  setInterval(()=>{if(S&&S.godInf&&isGod()){const d=D();S.hp=d.hp;S.mp=d.mp}},400);
+}catch(e){console.warn('eco47 god',e)}
+})();
+
+(function(){try{if(innerWidth<760&&!localStorage.getItem('eco-zoom'))setTimeout(()=>setZoom(13,true),400)}catch(e){}})();
 
 </script>
