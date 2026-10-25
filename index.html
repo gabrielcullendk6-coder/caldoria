@@ -6559,4 +6559,58 @@ const _mn51=SHEETS.menu;SHEETS.menu=function(){const r=_mn51();try{r[1]=r[1].rep
 const _gs51=SHEETS.god;SHEETS.god=function(){const r=_gs51();if(typeof isGod==='function'&&!isGod())return r;
   return[r[0],r[1]+`<h3 style="margin-top:14px">Pontos</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[10,100,1000].map(n=>`<button class="btn sm" data-a="godpts" data-v="${n}">+${n} pontos</button>`).join('')}</div>`]};
 
+// ===== v52: PETS — 16 bichinhos de estimação com bônus por vocação =====
+const PETS=[
+ {id:'morcego_fogo',n:'Morcego de Brasa',k:'m:animals/fire_bat',p:40,v:'feiticeiro',b:{atk:4,crit:1},d:'+4% ataque, +1% crítico'},
+ {id:'salamandra',n:'Salamandra',k:'m:salamander',p:60,v:'cavaleiro',b:{atk:5,hp:3},d:'+5% ataque, +3% vida'},
+ {id:'caranguejo',n:'Caranguejo de Fogo',k:'m:animals/fire_crab',p:45,v:'cavaleiro',b:{arm:6},d:'+6% defesa'},
+ {id:'lobo',n:'Lobo do Norte',k:'m:animals/wolf',p:50,v:'arqueiro',b:{speed:6,atk:3},d:'+6% velocidade, +3% ataque'},
+ {id:'urso',n:'Filhote de Urso Polar',k:'m:animals/polar_bear',p:70,v:'cavaleiro',b:{hp:6,arm:3},d:'+6% vida, +3% defesa'},
+ {id:'agua_viva',n:'Água-viva Gélida',k:'m:animals/jellyfish',p:40,v:'druida',b:{mp:6},d:'+6% mana'},
+ {id:'harpia',n:'Harpia',k:'m:harpy',p:55,v:'arqueiro',b:{speed:5,crit:2},d:'+5% velocidade, +2% crítico'},
+ {id:'vibora',n:'Víbora de Mana',k:'m:animals/mana_viper',p:65,v:'druida',b:{mp:7,ml:3},d:'+7% mana, +3% magic level'},
+ {id:'enguia',n:'Enguia Elétrica',k:'m:aquatic/electric_eel',p:60,v:'feiticeiro',b:{ml:4,atk:3},d:'+4% magic level, +3% ataque'},
+ {id:'sapo',n:'Sapo Gigante',k:'m:animals/giant_toad',p:35,v:'monge',b:{hp:4,speed:2},d:'+4% vida, +2% velocidade'},
+ {id:'besouro',n:'Besouro Rochoso',k:'m:animals/boulder_beetle',p:55,v:'monge',b:{arm:5,hp:3},d:'+5% defesa, +3% vida'},
+ {id:'formiga',n:'Formiga Soldado',k:'m:animals/soldier_ant',p:40,v:'cavaleiro',b:{atk:4,cap:10},d:'+4% ataque, +10% capacidade'},
+ {id:'cranio',n:'Crânio Voador',k:'m:undead/flying_skull',p:75,v:'feiticeiro',b:{ml:5,crit:2},d:'+5% magic level, +2% crítico'},
+ {id:'alma',n:'Alma Perdida',k:'m:undead/lost_soul',p:70,v:'druida',b:{mp:5,ml:4},d:'+5% mana, +4% magic level'},
+ {id:'querubim',n:'Querubim',k:'m:holy/cherub',p:110,v:'monge',b:{hp:5,mp:5,arm:3},d:'+5% vida, +5% mana, +3% defesa'},
+ {id:'apis',n:'Touro Sagrado',k:'m:holy/apis',p:150,v:'cavaleiro',b:{hp:8,atk:5,arm:4},d:'+8% vida, +5% ataque, +4% defesa'}];
+const petOf=()=>PETS.find(p=>p.id===(S&&S.pet))||null;
+// bônus: 1,5x quando o pet é da sua vocação
+function petMul(P,k){if(!P||!P.b[k])return 0;return P.b[k]*(P.v===S.voc?1.5:1)}
+const _D52=D;D=function(){const d=_D52.apply(this,arguments),P=petOf();if(!P)return d;
+  for(const k of ['atk','arm','hp','mp','cap','speed','ml']){const m=petMul(P,k);if(m&&typeof d[k]==='number')d[k]=Math.round(d[k]*(1+m/100))}
+  const c=petMul(P,'crit');if(c&&typeof d.crit==='number')d.crit=Math.round((d.crit+c)*10)/10;
+  return d};
+// o pet anda atrás de você
+const PET={x:0,y:0,dir:'S',t:0,trail:[]};
+const _up52=update;update=function(dt){_up52(dt);const P=petOf();if(!P||!Wd||!Pl)return;PET.t+=dt;
+  const px=Pl.p<1?lerp(Pl.px,Pl.x,Pl.p):Pl.x,py=Pl.p<1?lerp(Pl.py,Pl.y,Pl.p):Pl.y;
+  PET.trail.push([px,py]);if(PET.trail.length>14)PET.trail.shift();
+  const tg=PET.trail[0]||[px,py];if(!PET.x&&!PET.y){PET.x=tg[0];PET.y=tg[1]}
+  const dx=tg[0]-PET.x,dy=tg[1]-PET.y,dd=Math.hypot(dx,dy);
+  if(dd>3.5){PET.x=tg[0];PET.y=tg[1]}else if(dd>.04){const sp=Math.min(dd,dt*Math.max(3,dd*4));PET.x+=dx/dd*sp;PET.y+=dy/dd*sp;PET.dir=Math.abs(dx)>Math.abs(dy)?(dx>0?'E':'W'):(dy>0?'S':'N');PET.mv=1}else PET.mv=0};
+function petKey(P){const k=P._lk;if(k)return k;if(typeof DCC==='object'&&DCC[P.k]&&typeof regMob16==='function'){try{return P._lk='o'+regMob16(DCC[P.k],1.3)}catch(e){}}return P._lk=null}
+const _dp52=drawPlayer;drawPlayer=function(g,px,py,tt){const P=petOf();
+  if(P){try{const base=petKey(P);if(base){const k=frameKey(base,PET.dir,!!PET.mv,tt),[w,h]=otWH(k);
+    const cx=Math.round(PET.x*TS)-CAM.x+16,cy=Math.round(PET.y*TS)-CAM.y+30,X=Math.round(cx-w/2),Y=Math.round(cy-h+2+Math.sin(tt*4));
+    g.save();g.globalAlpha=.3;g.fillStyle='#000';g.beginPath();g.ellipse(cx,cy,Math.max(7,w*.3),Math.max(3,w*.13),0,0,7);g.fill();g.restore();
+    ot(g,k,X,Y)}}catch(e){}}
+  return _dp52.apply(this,arguments)};
+function petIcon(P){const [c,g]=mk(40,40);g.imageSmoothingEnabled=false;try{const b=petKey(P);if(b){const k=b+'_2_0',[w,h]=otWH(k);ot(g,k,(40-w)/2,(40-h)/2)}}catch(e){}return c.toDataURL()}
+ACT.petset=v=>{S.petOwn=S.petOwn||{};if(v==='none'){S.pet=null;toast('Pet guardado.');renderSheet();return}
+  const P=PETS.find(x=>x.id===v);if(!P)return;
+  if(!S.petOwn[v]){if(PTS()<P.p)return toast(`Faltam ${P.p-PTS()} ponto(s).`);S.pts=PTS()-P.p;S.petOwn[v]=1;toast(`${P.n} adotado!`)}
+  S.pet=v;PET.x=Pl.x;PET.y=Pl.y;toast(`${P.n} está com você.`);hud();renderSheet()};
+const _loja52=SHEETS.loja;SHEETS.loja=function(){const r=_loja52();S.petOwn=S.petOwn||{};
+  const row=P=>{const own=S.petOwn[P.id],use=S.pet===P.id,fav=P.v===S.voc;
+    return`<div class="li"><img class="ic" src="${petIcon(P)}" alt="" style="width:40px;height:40px"><div class="t"><b>${esc(P.n)}${fav?' <span class="chip">combina com você</span>':''}</b><small>${esc(P.d)}${fav?' · bônus 1,5x para '+VOC[P.v].nome:' · melhor para '+VOC[P.v].nome}</small></div>
+    ${use?'<span class="chip">em uso</span>':`<button class="btn sm ${own?'pri':''}" data-a="petset" data-v="${P.id}">${own?'Usar':P.p+' pts'}</button>`}</div>`};
+  const list=PETS.slice().sort((a,b)=>(b.v===S.voc)-(a.v===S.voc)||a.p-b.p);
+  return[r[0],r[1]+`<h3 style="margin-top:14px">Pets</h3><p class="muted" style="margin:0 0 8px">O pet anda com você e dá um bônus. Se ele combinar com a sua vocação, o bônus vale 1,5x. Só um pet por vez.</p>
+   ${S.pet?'<div class="row" style="margin-bottom:8px"><button class="btn sm" data-a="petset" data-v="none">Guardar o pet</button></div>':''}
+   <div class="list">${list.map(row).join('')}</div>`]};
+
 </script>
