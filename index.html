@@ -6497,4 +6497,66 @@ const _gsE=SHEETS.god;SHEETS.god=function(){const r=_gsE();if(typeof isGod==='fu
 // aviso do evento no HUD
 const _hudE=hud;hud=function(){_hudE();try{const el=$('h-boost');if(el&&evtOn50()){el.hidden=false;el.innerHTML=`<img src="${icon('xp')}" alt="">★ ${EVT50.xp}x · ${fmtH((EVT50.until-Date.now())/1000)}`}}catch(e){}};
 
+// ===== v51: GOD na tela, treino com exercício mais rápido, escuridão desligada, ASAS e Loja de Pontos =====
+// ---------- 1. escuridão desligada por padrão (ligar em Configurações → Gráficos) ----------
+(function(){const f=()=>{if(S&&S.cfgLight===undefined)S.cfgLight=false};setTimeout(f,1200);setInterval(f,4000)})();
+// ---------- 2. botão GOD flutuante na interface ----------
+(function(){const st=document.createElement('style');st.textContent=`#godb51{position:fixed;z-index:9;left:max(8px,env(safe-area-inset-left,0px));top:calc(50% - 20px);width:42px;height:42px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#7b36c8,#22102f);border:2px solid #c79bff;color:#fff;font:800 .66rem var(--f-m);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.55)}
+#godb51:active{transform:scale(.94)}`;document.head.appendChild(st)})();
+setInterval(()=>{const ok=typeof isGod==='function'&&isGod();let b=document.getElementById('godb51');
+  if(!ok){if(b)b.remove();return}if(b)return;b=document.createElement('button');b.id='godb51';b.textContent='GOD';
+  b.onclick=()=>{try{openSheet('god')}catch(e){}};document.body.appendChild(b)},1500);
+// ---------- 3. arma de exercício treina bem mais rápido que bater no boneco ----------
+const _at51=addTries;addTries=function(k,n){try{if(S&&S.training&&(S.exc>0)&&n>0)n=n*3}catch(e){}return _at51(k,n)};
+// ---------- 4. pontos e loja ----------
+const PTS=()=>{if(S&&S.pts==null)S.pts=0;return (S&&S.pts)||0};
+const PT_GOLD=25000; // 1 ponto = 25k gp enquanto não houver pagamento de verdade
+ACT.ptbuy=v=>{const n=+v||1,c=n*PT_GOLD;if(S.gold<c)return toast(`Faltam ${fmtK(c-S.gold)} gp.`);S.gold-=c;S.pts=PTS()+n;toast(`+${n} ponto(s)`);hud();renderSheet()};
+ACT.godpts=v=>{if(typeof isGod==='function'&&!isGod())return;S.pts=PTS()+(+v||0);toast('Pontos: '+PTS());renderSheet()};
+// ---------- 5. ASAS ----------
+const WINGS=[
+ {id:'none',nome:'Sem asas',p:0,c:null},
+ {id:'anjo',nome:'Asas de Anjo',p:30,c:['#ffffff','#e8e8ff'],sh:'pena'},
+ {id:'corvo',nome:'Asas de Corvo',p:30,c:['#2a2a33','#4a4a58'],sh:'pena'},
+ {id:'fogo',nome:'Asas de Fogo',p:45,c:['#ff7a2a','#ffd24a'],sh:'pena',glow:'#ff7a2a'},
+ {id:'gelo',nome:'Asas de Gelo',p:45,c:['#9fe6ff','#d8f6ff'],sh:'crist',glow:'#7fd8ff'},
+ {id:'morcego',nome:'Asas de Morcego',p:40,c:['#4a1f5e','#7a3aa0'],sh:'couro'},
+ {id:'dragao',nome:'Asas de Dragão',p:80,c:['#8a1f1f','#d04a2a'],sh:'couro',glow:'#ff4a2a'},
+ {id:'arcana',nome:'Asas Arcanas',p:120,c:['#7a4aff','#c79bff'],sh:'crist',glow:'#9a6aff'},
+ {id:'divina',nome:'Asas Divinas',p:200,c:['#fff2b0','#ffd24a'],sh:'pena',glow:'#ffd24a'}];
+const wingOf=()=>WINGS.find(w=>w.id===(S&&S.wing))||WINGS[0];
+function drawWings(g,cx,cy,tt,W,sc){if(!W||!W.c)return;const f=Math.sin(tt*3.4),sp=10*sc;
+  g.save();g.translate(cx,cy);
+  if(W.glow){g.globalCompositeOperation='lighter';const gr=g.createRadialGradient(0,0,2,0,0,34*sc);gr.addColorStop(0,W.glow+'66');gr.addColorStop(1,W.glow+'00');g.fillStyle=gr;g.beginPath();g.arc(0,0,34*sc,0,7);g.fill();g.globalCompositeOperation='source-over'}
+  for(const s of [-1,1]){g.save();g.scale(s,1);g.rotate(f*.16*s*-1);
+    const gr=g.createLinearGradient(0,-14*sc,22*sc,10*sc);gr.addColorStop(0,W.c[1]);gr.addColorStop(1,W.c[0]);g.fillStyle=gr;g.strokeStyle='rgba(0,0,0,.45)';g.lineWidth=1;
+    g.beginPath();
+    if(W.sh==='couro'){g.moveTo(0,-4*sc);g.quadraticCurveTo(16*sc,-18*sc,26*sc,-6*sc);g.quadraticCurveTo(20*sc,-2*sc,24*sc,6*sc);g.quadraticCurveTo(16*sc,2*sc,16*sc,10*sc);g.quadraticCurveTo(10*sc,4*sc,6*sc,10*sc);g.quadraticCurveTo(4*sc,2*sc,0,4*sc)}
+    else if(W.sh==='crist'){g.moveTo(0,-3*sc);g.lineTo(10*sc,-16*sc);g.lineTo(13*sc,-5*sc);g.lineTo(22*sc,-10*sc);g.lineTo(20*sc,2*sc);g.lineTo(27*sc,2*sc);g.lineTo(14*sc,11*sc);g.lineTo(2*sc,6*sc)}
+    else{g.moveTo(0,-4*sc);g.quadraticCurveTo(14*sc,-20*sc,27*sc,-9*sc);g.quadraticCurveTo(22*sc,-4*sc,26*sc,1*sc);g.quadraticCurveTo(18*sc,0,20*sc,6*sc);g.quadraticCurveTo(12*sc,3*sc,12*sc,10*sc);g.quadraticCurveTo(6*sc,4*sc,0,5*sc)}
+    g.closePath();g.fill();g.stroke();
+    if(W.sh==='pena'){g.strokeStyle='rgba(255,255,255,.35)';for(let i=1;i<4;i++){g.beginPath();g.moveTo(2*sc,-1*sc);g.lineTo((8+i*5)*sc,(-12+i*5)*sc);g.stroke()}}
+    g.restore()}
+  g.restore();
+  if(W.glow)for(let i=0;i<3;i++){const a=tt*2+i*2.1;g.save();g.globalCompositeOperation='lighter';g.fillStyle=W.glow;g.globalAlpha=.5;g.fillRect(cx+Math.cos(a)*sp*2,cy+Math.sin(a)*sp-10*sc-((tt*20+i*9)%22),2,2);g.restore()}}
+const _dpW=drawPlayer;drawPlayer=function(g,px,py,tt){const W=wingOf();
+  if(W&&W.c){try{drawWings(g,Math.round(px-CAM.x)+16,Math.round(py-CAM.y)+14,tt,W,1)}catch(e){}}
+  return _dpW.apply(this,arguments)};
+function wingIcon(id){const W=WINGS.find(w=>w.id===id)||WINGS[0],[c,g]=mk(44,36);if(W.c){g.translate(22,20);g.translate(-0,0);try{drawWings(g,0,0,0,W,.78)}catch(e){}}
+  else{g.fillStyle='#555';g.font='bold 11px sans-serif';g.textAlign='center';g.fillText('—',22,24)}return c.toDataURL()}
+ACT.wingset=v=>{const W=WINGS.find(w=>w.id===v);if(!W)return;S.wingOwn=S.wingOwn||{none:1};
+  if(W.p>0&&!S.wingOwn[v]){if(PTS()<W.p)return toast(`Faltam ${W.p-PTS()} ponto(s).`);S.pts=PTS()-W.p;S.wingOwn[v]=1;toast(`${W.nome} comprada!`)}
+  S.wing=v;toast(W.c?`Usando ${W.nome}.`:'Asas removidas.');renderSheet()};
+SHEETS.loja=function(){S.wingOwn=S.wingOwn||{none:1};
+  const row=W=>{const own=W.p===0||S.wingOwn[W.id],use=S.wing===W.id||(!S.wing&&W.id==='none');
+    return`<div class="li"><img class="ic" src="${wingIcon(W.id)}" alt="" style="width:46px;height:38px"><div class="t"><b>${esc(W.nome)}</b><small>${W.p?(own?'Você já tem':`${W.p} pontos`):'Grátis'}</small></div>
+    ${use?'<span class="chip">em uso</span>':`<button class="btn sm ${own?'pri':''}" data-a="wingset" data-v="${W.id}">${own?'Usar':'Comprar'}</button>`}</div>`};
+  return['Loja de Pontos',`<div class="row sp" style="margin-bottom:8px"><span>Seus pontos</span><b class="gold">${fmtN(PTS())}</b></div>
+  <p class="muted" style="margin:0 0 8px">Pontos compram itens que são só visuais: não deixam o personagem mais forte. Por enquanto você troca ouro por pontos; o pagamento com dinheiro de verdade precisa de um sistema de cobrança que ainda não existe no jogo.</p>
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">${[1,5,10,50].map(n=>`<button class="btn sm" data-a="ptbuy" data-v="${n}" ${S.gold<n*PT_GOLD?'disabled':''}>+${n} ponto${n>1?'s':''} · ${fmtK(n*PT_GOLD)} gp</button>`).join('')}</div>
+  <h3>Asas</h3><div class="list">${WINGS.map(row).join('')}</div>`]};
+const _mn51=SHEETS.menu;SHEETS.menu=function(){const r=_mn51();try{r[1]=r[1].replace('<h3>Personagem</h3><div class="menu-sec">',`<h3>Personagem</h3><div class="menu-sec"><button class="mi" data-a="open" data-v="loja"><img src="${icon('moeda')}" alt="">Loja de Pontos</button>`)}catch(e){}return r};
+const _gs51=SHEETS.god;SHEETS.god=function(){const r=_gs51();if(typeof isGod==='function'&&!isGod())return r;
+  return[r[0],r[1]+`<h3 style="margin-top:14px">Pontos</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[10,100,1000].map(n=>`<button class="btn sm" data-a="godpts" data-v="${n}">+${n} pontos</button>`).join('')}</div>`]};
+
 </script>
