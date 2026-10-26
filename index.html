@@ -234,8 +234,7 @@ const FEATS=[['⚔️','Caça automática','Escolha a hunt e o personagem caça,
  ['🏆','Ranking ao vivo','Level, magic level e todos os skills, por vocação.'],
  ['🔨','Forja e imbuimentos','Melhore equipamentos, adicione elementos e monte sua build.'],
  ['🧙','NPCs com IA','Converse livremente com os NPCs das cidades e peça conselhos ao Conselheiro.'],
- ['✦','Aventureiros do mundo','Personagens controlados pelo jogo andam e caçam pelas cidades e hunts. Eles têm o símbolo ✦ no nome.'],
- ['📱','Joga no celular','Controles por toque, joystick e tela que você personaliza.'],
+  ['📱','Joga no celular','Controles por toque, joystick e tela que você personaliza.'],
  ['☁️','Salvo na nuvem','Entre com Google ou e-mail e continue de qualquer aparelho.']];
 $('feats').innerHTML=FEATS.map(([i,t,d])=>`<div class="card feat"><div class="ic">${i}</div><div><h4>${t}</h4><div class="muted small">${d}</div></div></div>`).join('');
 
@@ -308,19 +307,21 @@ function init(){
 }
 
 // ---------- dados ao vivo (Firebase) ----------
-let TOK=null;
-async function auth(){
-  let r=null;try{r=JSON.parse(localStorage.getItem('eco-site-auth')||'null')}catch(e){}
-  if(r&&r.refresh){try{const res=await fetch('https://securetoken.googleapis.com/v1/token?key='+API_KEY,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=refresh_token&refresh_token='+encodeURIComponent(r.refresh)});if(res.ok){const j=await res.json();try{localStorage.setItem('eco-site-auth',JSON.stringify({refresh:j.refresh_token}))}catch(e){}return j.id_token}}catch(e){}}
-  const res=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+API_KEY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({returnSecureToken:true})});
-  if(!res.ok)throw new Error('auth');const j=await res.json();try{localStorage.setItem('eco-site-auth',JSON.stringify({refresh:j.refreshToken}))}catch(e){}return j.idToken}
-async function get(path,q){if(!TOK)TOK=await auth();const r=await fetch(DB+path+'.json?'+(q?q+'&':'')+'auth='+TOK);if(r.status===401){TOK=await auth();return get(path,q)}const j=await r.json();if(j&&j.error)throw new Error(j.error);return j}
+let TOK=null,TRIED=false;
+// lê sem login (ranking e guildas públicos); se o servidor exigir, usa a conta já conectada no jogo neste navegador
+async function userToken(){if(TRIED)return null;TRIED=true;try{const L=u=>new Promise((ok,no)=>{const s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=no;document.head.appendChild(s)});const V='10.12.2';
+  await L(`https://www.gstatic.com/firebasejs/${V}/firebase-app-compat.js`);await L(`https://www.gstatic.com/firebasejs/${V}/firebase-auth-compat.js`);
+  if(!firebase.apps.length)firebase.initializeApp({apiKey:API_KEY,authDomain:'eco-das-cavernas.firebaseapp.com',databaseURL:DB});
+  const u=await new Promise(r=>{const off=firebase.auth().onAuthStateChanged(x=>{off();r(x)});setTimeout(()=>r(null),4000)});return u?await u.getIdToken():null}catch(e){return null}}
+async function get(path,q){const url=DB+path+'.json?'+(q||'');let r=await fetch(url+(TOK?'&auth='+TOK:''));
+  if(r.status===401){if(!TOK)TOK=await userToken();if(!TOK)throw new Error('login');r=await fetch(url+'&auth='+TOK)}
+  const j=await r.json();if(j&&j.error)throw new Error(j.error);return j}
 let RANK=[],RSORT='l';
 const vocNm=k=>D?vocN(k):k;
 function main(r){return r.v==='druida'||r.v==='feiticeiro'?r.ml:r.v==='arqueiro'?r.di:r.v==='monge'?r.fi:r.me}
 async function loadRank(){try{const j=await get('rank',`orderBy=%22${RSORT}%22&limitToLast=100`);const seen=new Set();
   RANK=Object.entries(j||{}).map(([u,v])=>({u,...v})).sort((a,b)=>((+b[RSORT]||-1)-(+a[RSORT]||-1))||((+b.l||0)-(+a.l||0))).filter(x=>{const k=norm(x.n).trim();if(!k||seen.has(k))return false;seen.add(k);return true});
-  if(RSORT==='l')$('st-rank').textContent=fmt(RANK.length)+(RANK.length>=100?'+':'');rankRender()}catch(e){$('rk-body').innerHTML='<tr><td colspan="6" class="state">O ranking não carregou agora. Tente recarregar a página.</td></tr>'}}
+  if(RSORT==='l')$('st-rank').textContent=fmt(RANK.length)+(RANK.length>=100?'+':'');rankRender()}catch(e){$('rk-body').innerHTML='<tr><td colspan="6" class="state">'+(e.message==='login'?'Entre no jogo uma vez neste aparelho para ver o ranking.':'O ranking não carregou agora. Tente recarregar a página.')+'</td></tr>'}}
 function rankRender(){if(!RANK.length)return;const v=$('rk-voc').value,q=norm($('rk-q').value),col={l:'Skill principal',ml:'Magic Level',me:'Melee',di:'Distance',fi:'Fist',sh:'Shielding'}[RSORT];$('rk-col').textContent=col;
   const L=RANK.filter(r=>(!v||r.v===v)&&(!q||norm(r.n).includes(q)));
   $('rk-body').innerHTML=L.map((r,i)=>`<tr><td class="pos ${i<3&&!q?'p'+(i+1):''}">${i+1}º</td><td><b>${esc(r.n)}</b><div class="small muted" style="display:none">${esc(vocNm(r.v))}</div></td><td class="r"><b>${r.l||'—'}</b></td><td class="r">${(RSORT==='l'?main(r):r[RSORT])??'—'}</td><td class="hide-m">${esc(vocNm(r.v))}</td><td class="hide-m">${esc(r.g||'—')}</td></tr>`).join('')||'<tr><td colspan="6" class="state">Ninguém encontrado.</td></tr>'}
@@ -328,8 +329,8 @@ $('rk-stat').addEventListener('change',e=>{RSORT=e.target.value;loadRank()});$('
 async function loadGuilds(){try{const [g,m]=await Promise.all([get('guilds'),get('gmembers').catch(()=>({}))]);const L=Object.entries(g||{}).map(([id,x])=>{const mem=Object.values((m||{})[id]||{});return{id,n:x.n||x.nome||'Guilda',d:x.d||x.desc||'',mem,lv:mem.length?Math.round(mem.reduce((s,a)=>s+(+a.l||0),0)/mem.length):0,lider:(mem.find(a=>/l[ií]der/i.test(a.r||''))||{}).n||''}}).filter(x=>x.mem.length).sort((a,b)=>b.mem.length-a.mem.length||b.lv-a.lv);
   $('gd-list').innerHTML=L.map(x=>`<div class="card"><h4>🛡️ ${esc(x.n)}</h4>${x.d?`<div class="muted small">${esc(x.d)}</div>`:''}<div class="row small" style="gap:6px;margin-top:6px"><span class="tag gold">${x.mem.length} membro${x.mem.length>1?'s':''}</span><span class="tag">nível médio ${x.lv}</span>${x.lider?`<span class="tag">Líder: ${esc(x.lider)}</span>`:''}</div><div class="small muted" style="margin-top:6px">${x.mem.sort((a,b)=>(b.l||0)-(a.l||0)).slice(0,8).map(a=>esc(a.n)+' ['+(a.l||'?')+']').join(', ')}${x.mem.length>8?'…':''}</div></div>`).join('')||'<div class="state">Ainda não há guildas. Seja o primeiro a fundar uma dentro do jogo!</div>'}
   catch(e){$('gd-list').innerHTML='<div class="state">As guildas não carregaram agora.</div>'}}
-async function loadOnline(){try{const j=await get('players');const now=Date.now();let n=0;for(const k in (j||{})){const p=j[k];if(p&&(!p.t||now-p.t<120000))n++}$('st-on').textContent=fmt(n)}catch(e){$('st-on').textContent='—'}}
-loadRank();loadGuilds();loadOnline();setInterval(loadOnline,60000);setInterval(loadRank,120000);
+async function loadOnline(){try{const j=await get('players');const now=Date.now();let n=0;for(const k in (j||{})){const p=j[k];if(p&&(!p.t||now-p.t<120000))n++}const tb=RANK.filter(r=>r.b===1&&r.t&&now-r.t<900000).length;$('st-on').textContent=fmt(n+tb)}catch(e){try{const t=Date.now()-900000;const n=RANK.filter(r=>r.t&&r.t>t).length;$('st-on').textContent=RANK.length?fmt(n):'—'}catch(x){}}}
+loadRank().then(loadOnline);loadGuilds();setInterval(loadOnline,60000);setInterval(loadRank,120000);
 })();
 </script>
 </body>
