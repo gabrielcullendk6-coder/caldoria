@@ -7497,3 +7497,107 @@ try{const _up48=update;update=function(dt){try{smartTick(dt)}catch(e){}return _u
 try{if(SHEETS.tutorial){const _tu48=SHEETS.tutorial;SHEETS.tutorial=function(){const r=_tu48.apply(this,arguments);r[1]+=`<h3>IA no jogo</h3><p>Converse com qualquer NPC escrevendo o que quiser: eles respondem no personagem. No Conselheiro, a IA sugere hunt, equipamento e analisa sua caçada. O chat global tem filtro automático de palavrões, links e flood. Monstros pedem ajuda quando apanham e os chefes ficam furiosos com pouca vida.</p>`;return r}}}catch(e){}
 })();
 </script>
+<script id="eco49-mobile">
+// ===== v49: celular — mais tela para o jogo, barra de ações compacta, guia que não cobre nada =====
+(function(){
+'use strict';
+const css=`
+/* toque: sem zoom de duplo toque, sem flash azul, sem selecionar texto sem querer */
+html,body{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+#dock,#nav,#hud,#side,#joy,#zbar,#mmz,.slot,.rb,#nav button{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+/* guia nunca fica por cima de janelas */
+body.ov49 #eco40-tutorial{display:none!important}
+#eco40-tutorial .t49-min{background:none;border:0;color:inherit;font:700 1.1rem/1 sans-serif;width:30px;height:30px;cursor:pointer;opacity:.8}
+#eco40-tutorial .t40-top{display:flex;align-items:center;gap:4px}
+#eco40-tutorial .t40-top>span{flex:1}
+#eco40-tutorial.t49-mini{cursor:pointer;padding:6px 10px!important;max-height:none!important;overflow:hidden!important}
+#eco40-tutorial.t49-mini>*:not(.t40-top):not(h3){display:none!important}
+#eco40-tutorial.t49-mini h3{margin:2px 0 0!important;font-size:.85rem!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#eco40-tutorial.t49-mini .t40-close{display:none!important}
+/* faixa única e rolável para magias + poções */
+#strip49{display:flex;flex-wrap:nowrap;gap:4px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;overscroll-behavior-x:contain;min-width:0;padding-bottom:1px}
+#strip49::-webkit-scrollbar{display:none}
+#strip49>.arow{display:flex!important;flex-wrap:nowrap!important;flex:none!important;gap:4px!important;margin:0!important;width:auto!important;min-width:0!important}
+#strip49>.arow>.slot{flex:none!important}
+#strip49 #row2>.slot{order:5}#strip49 #row2>#sl-allpot{order:0}#strip49 #row2>#sl-hp{order:1}#strip49 #row2>#sl-mp{order:2}#strip49 #row2>.slot[data-a="rune"],#strip49 #row2>.slot[data-a="userune"]{order:3}
+#strip49.more49{-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+@media (max-width:899px) and (orientation:portrait){
+ .bars2{display:flex!important;flex-direction:column!important;gap:5px!important;padding:5px!important}
+ html body .slot,html body #dock .slot,html body #dock .slot.master{width:44px!important;height:44px!important}
+ html body .slot img{width:32px!important;height:32px!important;margin-top:2px}
+ .slot.master b{font-size:.5rem!important;line-height:1.05!important}
+ body.sidebot .bars2 #side{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;justify-content:space-between!important;gap:4px!important;margin-top:0!important}
+ body.sidebot .bars2 #side::-webkit-scrollbar{display:none}
+ body.sidebot .bars2 #side .rb{width:40px!important;height:40px!important;flex:none}
+ body.sidebot .bars2 #side .rb img{width:24px!important;height:24px!important}
+ html body #chatline{min-height:26px!important;padding:3px 9px!important;font-size:.74rem!important}
+ #hud .cur{flex-wrap:nowrap!important;overflow:hidden}
+ #hud .potlb{display:none!important}
+ #hud .chip{white-space:nowrap}
+ #eco40-tutorial{font-size:.85rem!important}
+ #eco40-tutorial.t49-mini{left:auto!important;right:8px!important;width:min(240px,60vw)!important}
+ #eco40-tutorial h3{font-size:1rem!important;margin:4px 0!important}
+ #eco40-tutorial p{margin:0 0 6px!important}
+ #ov .modal{max-height:calc(100dvh - 24px)!important;overflow:auto!important}
+}
+@media (max-width:360px) and (orientation:portrait){
+ html body .slot,html body #dock .slot,html body #dock .slot.master{width:40px!important;height:40px!important}
+ html body .slot img{width:29px!important;height:29px!important}
+ body.sidebot .bars2 #side .rb{width:36px!important;height:36px!important}
+ body.sidebot .bars2 #side .rb img{width:22px!important;height:22px!important}
+ #hud{width:min(74vw,236px)!important}
+ #hud .chip{font-size:.58rem!important;padding:2px 4px!important}
+}
+@media (max-height:560px) and (orientation:landscape){
+ #strip49{flex:1 1 auto}
+ .bars2{min-width:0!important;overflow:hidden}
+ body.sidebot .bars2 #side{flex:none!important;flex-wrap:nowrap!important}
+ #ov .modal{max-height:calc(100dvh - 16px)!important;overflow:auto!important}
+ #eco40-tutorial{left:auto!important;right:calc(max(4px,env(safe-area-inset-right,0px)) + 4px)!important;width:min(300px,44vw)!important;top:calc(4px + env(safe-area-inset-top,0px))!important;bottom:auto!important}
+}
+`;
+const st=document.createElement('style');st.id='eco49-css';st.textContent=css;document.head.appendChild(st);
+
+const mobile=()=>matchMedia('(max-width:899px), (max-height:560px)').matches;
+
+// ---- barra: junta magias e poções numa faixa rolável ----
+function strip(){
+  const r1=document.getElementById('row1'),r2=document.getElementById('row2');if(!r1||!r2)return;
+  let s=document.getElementById('strip49');
+  if(!mobile()){ // computador: volta ao layout original
+    if(s){const p=s.parentElement;p.insertBefore(r1,s);p.insertBefore(r2,s);s.remove()}return}
+  if(!s){s=document.createElement('div');s.id='strip49';r1.parentElement.insertBefore(s,r1)}
+  if(r1.parentElement!==s)s.appendChild(r1);
+  if(r2.parentElement!==s)s.appendChild(r2);
+  s.classList.toggle('more49',s.scrollWidth>s.clientWidth+4&&s.scrollLeft+s.clientWidth<s.scrollWidth-4);
+}
+document.addEventListener('scroll',e=>{if(e.target&&e.target.id==='strip49')strip()},true);
+
+// ---- guia: minimizar e esconder quando houver janela aberta ----
+const TKEY='eco-t49-mini';
+const tutMini=()=>{try{const v=localStorage.getItem(TKEY);if(v!==null)return v==='1'}catch(e){}return mobile()&&innerHeight<760};
+function tut(){
+  const el=document.getElementById('eco40-tutorial');if(!el||el.hidden)return;
+  const top=el.querySelector('.t40-top');
+  if(top&&!top.querySelector('.t49-min')){const b=document.createElement('button');b.className='t49-min';b.type='button';b.setAttribute('aria-label','Minimizar guia');b.textContent='–';top.insertBefore(b,top.querySelector('.t40-close'))}
+  const mini=tutMini();el.classList.toggle('t49-mini',mini);
+  const port=matchMedia('(max-width:899px) and (orientation:portrait)').matches,hud=document.getElementById('hud');
+  if(mini&&port&&hud){const hb=hud.getBoundingClientRect().bottom;el.style.setProperty('top',Math.round(hb+6)+'px','important');el.style.setProperty('bottom','auto','important')}
+  else{el.style.removeProperty('top');el.style.removeProperty('bottom')}
+  const b=el.querySelector('.t49-min');if(b){b.textContent=mini?'+':'–';b.setAttribute('aria-label',mini?'Abrir guia':'Minimizar guia')}
+}
+document.addEventListener('click',e=>{
+  const el=document.getElementById('eco40-tutorial');if(!el||!el.contains(e.target))return;
+  const btn=e.target.closest('.t49-min');
+  if(btn||(el.classList.contains('t49-mini')&&!e.target.closest('[data-tut]'))){e.preventDefault();e.stopPropagation();
+    try{localStorage.setItem(TKEY,tutMini()?'0':'1')}catch(x){}tut()}
+},true);
+
+function modalState(){const ov=document.getElementById('ov');const open=!!(ov&&ov.querySelector('.modal'))||!!document.getElementById('csel57');document.body.classList.toggle('ov49',open)}
+
+let q=0;function tick(){if(q)return;q=requestAnimationFrame(()=>{q=0;try{strip()}catch(e){}try{tut()}catch(e){}try{modalState()}catch(e){}})}
+new MutationObserver(tick).observe(document.body,{childList:true,subtree:true});
+addEventListener('resize',tick);addEventListener('orientationchange',()=>setTimeout(tick,250));
+setTimeout(tick,500);
+})();
+</script>
