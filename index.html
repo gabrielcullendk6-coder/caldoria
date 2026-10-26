@@ -343,9 +343,18 @@ const hsh=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.char
 const BR=t=>{try{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',weekday:'short',hour12:false}).formatToParts(new Date(t));const o={};for(const x of p)o[x.type]=x.value;return{h:+o.hour%24,m:+o.minute,wd:o.weekday}}catch(e){const d=new Date(t);return{h:d.getHours(),m:d.getMinutes(),wd:''}}};
 const peak=h=>h>=19&&h<=23?.68:h>=12&&h<19?.48:h>=7&&h<12?.38:.32;
 const tbOnline=(b,t=Date.now())=>hsh(b.u+'|'+Math.floor(t/(20*60*1000)))<peak(BR(t).h);
-const tbLevel=(b,t=Date.now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);if(b.f>=2)return Math.max(8,Math.min(500,Math.round(500-(500-b.l0)*Math.exp(-(b.r||1)*0.003*days))));return Math.max(1,Math.round(b.l0+(b.r||1)*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
-function tbSk(v,l,seed){const j=k=>Math.round(hsh(seed+k)*4);const g=x=>Math.max(10,Math.round(x));
-  return v==='druida'||v==='feiticeiro'?{ml:Math.round(l*.38)+j('a'),me:10,di:10,fi:10,sh:g(10+l*.05)+j('b')}:v==='arqueiro'?{ml:Math.round(l*.12),me:10,di:g(12+l*.55)+j('c'),fi:10,sh:g(12+l*.3)+j('d')}:v==='monge'?{ml:Math.round(l*.1),me:10,di:10,fi:g(12+l*.58)+j('e'),sh:g(10+l*.2)+j('f')}:{ml:Math.round(l*.08),me:g(12+l*.6)+j('g'),di:10,fi:10,sh:g(12+l*.55)+j('h')}}
+// v58: nível dos bots igual em todo aparelho, calculado pela chave do bot (não depende do que está gravado). Sobe todo dia, devagar: 8→100 em ~1 mês, 300 em ~10 meses, 500 em ~2 anos e meio.
+const T0=Date.UTC(2026,9,26,3);
+const tbL0=K=>{const a=hsh(K+'#l0');return a<.4?8+a/.4*32:a<.75?40+(a-.4)/.35*60:a<.95?100+(a-.75)/.2*80:180+(a-.95)/.05*70};
+const tbLevel=(b,t=Date.now())=>{const K=b.k||b.u||'';const r=.6+hsh(K+'#r')*.8,days=Math.max(0,(t-T0)/864e5);return Math.max(8,Math.min(500,Math.round(Math.pow(Math.pow(tbL0(K),2.2)+900*r*days,1/2.2))))};
+// skills no padrão Tibia: sobem rápido no começo e travam perto de 120~130 no nível 500
+const cvS=(l,c)=>1-Math.exp(-l/c);
+function SKF(v,l,seed){const j=k=>Math.round(hsh(seed+k)*6)-3,g=x=>Math.max(10,Math.round(x));
+  return v==='druida'||v==='feiticeiro'?{ml:Math.max(0,Math.round(4+116*cvS(l,160))+j('a')),me:10,di:10,fi:10,sh:g(10+20*cvS(l,150)+j('b'))}
+   :v==='arqueiro'?{ml:Math.round(3+22*cvS(l,200)),me:g(10+20*cvS(l,150)),di:g(10+115*cvS(l,130)+j('c')),fi:10,sh:g(10+75*cvS(l,140)+j('d'))}
+   :v==='monge'?{ml:Math.round(4+28*cvS(l,200)),me:10,di:10,fi:g(10+115*cvS(l,130)+j('e')),sh:g(10+80*cvS(l,140)+j('f'))}
+   :{ml:Math.round(2+9*cvS(l,200)),me:g(10+118*cvS(l,130)+j('g')),di:10,fi:10,sh:g(10+112*cvS(l,135)+j('h'))}}
+const tbSk=SKF;
 const tbLive=b=>{const l=tbLevel(b);return Object.assign({},b,{l},tbSk(b.v,l,b.u))};
 let RANK=[],RSORT='l';
 const vocNm=k=>D?vocN(k):k;

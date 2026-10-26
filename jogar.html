@@ -7610,6 +7610,7 @@ setTimeout(tick,500);
 })();
 </script>
 <script id="eco50-js">
+
 // ===== v50: login sem surpresas, visual com sexo, jogadores IA, tela do celular personalizável =====
 (function(){
 'use strict';
@@ -7704,46 +7705,84 @@ function makeBot(i,lvl){const f=Math.random()<.5,L=(typeof PCLIST==='function'?P
   const tb=typeof window.ECO_TBPICK==='function'?window.ECO_TBPICK(f):null;
   return{bot:true,uid:'ia_'+i,n:tb?tb.n:nick(f),l:tb?tb.l:Math.max(1,lvl+rndi(-6,8)),v:tb&&VOC[tb.v]?tb.v:pick(vocs),base,hp:100,x:0,y:0,rx:0,ry:0,d:'S',moving:false,stepT:Math.random(),say:null,sayT:0,tgt:null,atkT:0}}
 function walkable(x,y){try{return !isWall(x,y)&&!(Wd.occ&&Wd.occ[y*Wd.w+x])}catch(e){return false}}
-function placeBot(b){for(let k=0;k<200;k++){const x=rndi(1,Wd.w-2),y=rndi(1,Wd.h-2);if(!walkable(x,y))continue;if(Math.abs(x-Pl.x)+Math.abs(y-Pl.y)>18&&k<150)continue;b.x=b.rx=x;b.y=b.ry=y;return true}return false}
-function botsReset(){BOTS.list=[];if(!botsOn()||!S||!Wd)return;const H=S.hunt>=0?HUNTS[S.hunt]:null;
+const passable=(x,y)=>{try{return x>0&&y>0&&x<Wd.w-1&&y<Wd.h-1&&!isWall(x,y)}catch(e){return false}};
+// caminho curto (BFS) até o destino; ignora monstros, desvia de paredes
+function pathTo(b,tx,ty,max){const W=Wd.w,H=Wd.h;if(!passable(tx,ty))return null;const lim=max||2600;const prev=new Int32Array(W*H).fill(-1);const q=[b.y*W+b.x];prev[q[0]]=q[0];let h=0;
+  while(h<q.length&&q.length<lim){const i=q[h++],x=i%W,y=(i/W)|0;if(x===tx&&y===ty){const P=[];let c=i;while(c!==prev[c]){P.push([c%W,(c/W)|0]);c=prev[c]}return P.reverse()}
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){const X=x+dx,Y=y+dy;if(!passable(X,Y))continue;const j=Y*W+X;if(prev[j]>=0)continue;prev[j]=i;q.push(j)}}return null}
+function randTile(near,r){for(let k=0;k<300;k++){const x=near?near.x+rndi(-r,r):rndi(1,Wd.w-2),y=near?near.y+rndi(-r,r):rndi(1,Wd.h-2);if(walkable(x,y))return{x,y}}return null}
+function exitsOf(){const L=[];try{for(const e of (Wd.exits||[]))L.push({x:e.x,y:e.y});for(const c of (Wd.changes||[]))L.push({x:c.x,y:c.y})}catch(e){}
+  if(!L.length){for(let k=0;k<6;k++){const t=randTile(null);if(t)L.push(t)}}return L}
+function npcSpots(){const L=[];try{for(const n of (Wd.npcs||[])){for(const [dx,dy] of [[0,1],[1,0],[-1,0],[0,-1],[1,1],[-1,1]]){if(walkable(n.x+dx,n.y+dy)){L.push({x:n.x+dx,y:n.y+dy,npc:n});break}}}}catch(e){}return L}
+function placeBot(b,at){const t=at||randTile(Math.random()<.6?Pl:null,14);if(!t)return false;b.x=b.rx=t.x;b.y=b.ry=t.y;return true}
+const hpMax=b=>Math.round(185+15*Math.max(0,b.l-8));
+function plan(b){const town=S.hunt<0;b.plan=[];if(town){const N=npcSpots();const k=rndi(1,3);for(let i=0;i<k&&N.length;i++){const s=pick(N);b.plan.push({go:{x:s.x,y:s.y}},{idle:rndi(6,25),face:s.npc})}
+    if(Math.random()<.4){const t=randTile(null);if(t)b.plan.push({go:t},{idle:rndi(3,12)})}b.plan.push({go:pick(exitsOf()),leave:1})}
+  else{b.plan.push({hunt:rndi(12,45)});b.plan.push({go:pick(exitsOf()),leave:1})}}
+function spawnBot(i,atExit){const b=makeBot(i,S.lvl);b.max=hpMax(b);b.hp=b.max;b.uid='ia_'+i+'_'+Date.now();const ex=atExit?pick(exitsOf()):null;if(!placeBot(b,ex&&walkable(ex.x,ex.y)?ex:null))return null;plan(b);if(!atExit&&Math.random()<.5)b.plan.shift();return b}
+function botsReset(){BOTS.list=[];BOTS.spawnT=0;if(!botsOn()||!S||!Wd)return;const H=S.hunt>=0?HUNTS[S.hunt]:null;
   if(H&&(H.arena||H.tower||Wd.tower))return; // salas de boss e torre: só você
-  const n=S.hunt<0?rndi(3,5):rndi(1,2);
-  for(let i=0;i<n;i++){const b=makeBot(i,S.lvl);if(placeBot(b))BOTS.list.push(b)}}
+  BOTS.want=S.hunt<0?rndi(4,7):rndi(1,2);for(let i=0;i<BOTS.want;i++){const b=spawnBot(i,false);if(b)BOTS.list.push(b)}}
+function stepAlong(b){if(!b.path||!b.path.length)return false;const [nx,ny]=b.path[0];if(nx===Pl.x&&ny===Pl.y||BOTS.list.some(o=>o!==b&&o.x===nx&&o.y===ny)||!walkable(nx,ny)){b.blk=(b.blk||0)+1;if(b.blk>3){b.path=null;b.blk=0}return true}
+  b.blk=0;face50(b,nx-b.x,ny-b.y);b.x=nx;b.y=ny;b.path.shift();return true}
+const spd=b=>Math.max(.24,.46-b.l*.0006);
 function botTick(dt){
   if(!S||!Wd)return;const z=(typeof zoneKey==='function'?zoneKey():'')+'|'+(Wd.w||0)+'x'+(Wd.h||0);
   if(z!==BOTS.zone){BOTS.zone=z;botsReset()}
   if(!botsOn()){BOTS.list=[];return}
   const host=S.hunt>=0&&!window.ECO_WORLD_CLIENT;
-  for(const b of BOTS.list){
-    // movimento suave entre quadrados
-    const dx=b.x-b.rx,dy=b.y-b.ry,sp=dt*4.2;b.moving=Math.abs(dx)+Math.abs(dy)>.04;b.rx+=Math.sign(dx)*Math.min(Math.abs(dx),sp);b.ry+=Math.sign(dy)*Math.min(Math.abs(dy),sp);
-    if(b.say){b.sayT-=dt;if(b.sayT<=0)b.say=null}
-    else if(Math.random()<dt*(S.hunt<0?.03:.015)){b.say=pick(S.hunt<0?FALAS_T:FALAS_H);b.sayT=4}
-    if(b.moving)continue;b.stepT-=dt;if(b.stepT>0)continue;
-    // caça: escolhe um monstro que não é o seu alvo e luta com ele
-    if(host){
+  // repõe quem foi embora: chega alguém novo pela entrada
+  if(BOTS.list.length<(BOTS.want||0)){BOTS.spawnT=(BOTS.spawnT||rndi(6,20))-dt;if(BOTS.spawnT<=0){BOTS.spawnT=rndi(8,30);const b=spawnBot(rndi(10,999),true);if(b)BOTS.list.push(b)}}
+  for(const b of BOTS.list.slice()){
+    const dx=b.x-b.rx,dy=b.y-b.ry,sp=dt/spd(b);b.moving=Math.abs(dx)+Math.abs(dy)>.04;b.rx+=Math.sign(dx)*Math.min(Math.abs(dx),sp);b.ry+=Math.sign(dy)*Math.min(Math.abs(dy),sp);
+    if(b.say){b.sayT-=dt;if(b.say&&b.sayT<=0)b.say=null}
+    else if(!b.foe&&Math.random()<dt*(S.hunt<0?.012:.006)){b.say=pick(S.hunt<0?FALAS_T:FALAS_H);b.sayT=4}
+    b.atkT=(b.atkT||0)-dt;
+    if(b.moving)continue;b.stepT-=dt;if(b.stepT>0)continue;b.stepT=spd(b);
+    // ---- briga com o jogador (ele atacou o bot) ----
+    if(b.foe==='fight'){const c=cheb(b,Pl);if(S.hunt<0||S.hp<=0){b.foe=null}else{
+        if(b.hp<b.max*.35&&Math.random()<.35){const h=Math.round(b.max*.2);b.hp=Math.min(b.max,b.hp+h);try{floatT(b.x,b.y,'+'+h,'#6fe08a')}catch(e){}b.say='exura';b.sayT=1.2}
+        const rg=(VOC[b.v]&&VOC[b.v].range)||1;
+        if(c<=rg){face50(b,Pl.x-b.x,Pl.y-b.y);if(b.atkT<=0){b.atkT=1.8;try{hurtPlayer({d:{nome:b.n,hit:Math.round(12+b.l*4.2)},x:b.x,y:b.y,id:'bot'},rg>1)}catch(e){}if(S.hp<=0){b.foe=null;b.say=pick(['kkk','fica esperto','gg']);b.sayT=3}}continue}
+        if(!b.path||!b.path.length||b.pathFor!==Pl.x+','+Pl.y){b.path=pathTo(b,Pl.x,Pl.y,1800);b.pathFor=Pl.x+','+Pl.y;if(b.path&&b.path.length)b.path.pop()}stepAlong(b);continue}}
+    if(b.foe==='flee'){if(!b.path||!b.path.length){const ex=exitsOf().sort((a,c)=>cheb(c,Pl)-cheb(a,Pl))[0];b.path=ex?pathTo(b,ex.x,ex.y):null;if(!b.path){b.foe=null}}
+      b.stepT=spd(b)*.8;stepAlong(b);if((!b.path||!b.path.length)&&b.foe==='flee'){gone(b,`${b.n} fugiu.`)}continue}
+    // ---- plano normal ----
+    if(!b.plan||!b.plan.length)plan(b);const st=b.plan[0];
+    if(st.idle!=null){if(st.face){face50(b,st.face.x-b.x,st.face.y-b.y)}st.idle-=b.stepT;b.stepT=1;if(st.idle<=0)b.plan.shift();continue}
+    if(st.hunt!=null&&host){
       if(b.tgt&&!Wd.mobs.includes(b.tgt))b.tgt=null;
-      if(!b.tgt){let best=null,bd=1e9;for(const m of Wd.mobs){if(m.id==='boneco'||m.d.boss||m===Pl.target||m.summon)continue;if(BOTS.list.some(o=>o!==b&&o.tgt===m))continue;const d=Math.abs(m.x-b.x)+Math.abs(m.y-b.y);if(d<bd&&d<14){bd=d;best=m}}b.tgt=best}
-      const m=b.tgt;
-      if(m){const c=Math.max(Math.abs(m.x-b.x),Math.abs(m.y-b.y));
-        if(c<=1){b.atkT-=.5;b.stepT=.5;face50(b,m.x-b.x,m.y-b.y);if(b.atkT<=0){b.atkT=1.6;const dmg=Math.max(1,Math.round(m.max*(.12+Math.random()*.1)));m.hp-=dmg;m.hitT=.15;try{floatT(m.x,m.y,String(dmg),'#c9a0ff')}catch(e){}
-            if(m.hp<=0)botKill(b,m)}continue}
-        const sx=Math.sign(m.x-b.x),sy=Math.sign(m.y-b.y);
-        if(tryStep(b,sx,sy)||tryStep(b,sx,0)||tryStep(b,0,sy)){b.stepT=.42;continue}
-        b.tgt=null}
-    }
-    // passeio
-    if(Math.random()<.35){b.stepT=rndi(1,3)*.6;continue}
-    const dirs=[[1,0],[-1,0],[0,1],[0,-1]];const [ax,ay]=b.last&&Math.random()<.7?b.last:pick(dirs);
-    if(tryStep(b,ax,ay))b.last=[ax,ay];else b.last=null;b.stepT=.5;
+      if(!b.tgt){let best=null,bd=1e9;for(const m of Wd.mobs){if(m.id==='boneco'||m.d.boss||m===Pl.target||m.summon)continue;if(BOTS.list.some(o=>o!==b&&o.tgt===m))continue;const d=Math.abs(m.x-b.x)+Math.abs(m.y-b.y);if(d<bd&&d<18){bd=d;best=m}}b.tgt=best;b.path=null}
+      const m=b.tgt;if(!m){if(!b.path||!b.path.length){const t=randTile(b,8);b.path=t?pathTo(b,t.x,t.y,900):null}stepAlong(b);continue}
+      const c=Math.max(Math.abs(m.x-b.x),Math.abs(m.y-b.y)),rg=(VOC[b.v]&&VOC[b.v].range)||1;
+      if(c<=rg){face50(b,m.x-b.x,m.y-b.y);if(b.atkT<=0){b.atkT=1.6;const dmg=Math.max(1,Math.round(m.max*(.1+Math.random()*.1)));m.hp-=dmg;m.hitT=.15;try{floatT(m.x,m.y,String(dmg),'#ffb0b0')}catch(e){}
+          if(m.hp<=0){botKill(b,m);st.hunt--;if(st.hunt<=0)b.plan.shift()}}continue}
+      if(!b.path||!b.path.length||b.pathFor!==m.x+','+m.y){b.path=pathTo(b,m.x,m.y,1200);b.pathFor=m.x+','+m.y;if(b.path&&b.path.length)b.path.pop();if(!b.path)b.tgt=null}
+      stepAlong(b);continue}
+    if(st.hunt!=null&&!host){b.plan.shift();continue}
+    if(st.go){if(!b.path||!b.path.length){if(cheb(b,st.go)<=0||b.triedGo>2){b.plan.shift();b.triedGo=0;if(st.leave){gone(b);continue}continue}b.path=pathTo(b,st.go.x,st.go.y);b.triedGo=(b.triedGo||0)+1;if(!b.path){b.plan.shift();if(st.leave)gone(b);continue}}
+      stepAlong(b);if(!b.path.length&&st.leave&&cheb(b,st.go)<=1){gone(b)}continue}
   }
 }
+function gone(b,txt){const i=BOTS.list.indexOf(b);if(i>=0)BOTS.list.splice(i,1);if(Pl.botT===b)Pl.botT=null;if(txt){try{msg(txt,'c-sys')}catch(e){}}}
 function face50(b,dx,dy){if(Math.abs(dx)>=Math.abs(dy)&&dx)b.d=dx>0?'E':'W';else if(dy)b.d=dy>0?'S':'N'}
-function tryStep(b,dx,dy){if(!dx&&!dy)return false;const x=b.x+dx,y=b.y+dy;if(!walkable(x,y))return false;if(x===Pl.x&&y===Pl.y)return false;if(BOTS.list.some(o=>o!==b&&o.x===x&&o.y===y))return false;
-  if(S.hunt<0&&Math.abs(x-Pl.x)+Math.abs(y-Pl.y)>26)return false;b.x=x;b.y=y;face50(b,dx,dy);return true}
-function botKill(b,m){const i=Wd.mobs.indexOf(m);if(i<0)return;Wd.mobs.splice(i,1);try{Wd.occ[m.y*Wd.w+m.x]=0}catch(e){}try{Wd.corpses.push({x:m.x,y:m.y,id:m.id,t:0})}catch(e){}if(Pl.target===m)Pl.target=null;b.tgt=null;if(Math.random()<.25){b.say=pick(['mais um!','loot!','fácil','next']);b.sayT=2.5}}
+function tryStep(b,dx,dy){if(!dx&&!dy)return false;const x=b.x+dx,y=b.y+dy;if(!walkable(x,y))return false;if(x===Pl.x&&y===Pl.y)return false;if(BOTS.list.some(o=>o!==b&&o.x===x&&o.y===y))return false;b.x=x;b.y=y;face50(b,dx,dy);return true}
+function botKill(b,m){const i=Wd.mobs.indexOf(m);if(i<0)return;Wd.mobs.splice(i,1);try{Wd.occ[m.y*Wd.w+m.x]=0}catch(e){}try{Wd.corpses.push({x:m.x,y:m.y,id:m.id,t:0})}catch(e){}if(Pl.target===m)Pl.target=null;b.tgt=null;if(Math.random()<.15){b.say=pick(['mais um!','loot!','fácil','next']);b.sayT=2.5}}
+// ---- o jogador ataca um bot (só em hunt, fora da zona de proteção) ----
+function canHitBots(){try{return S.hunt>=0&&(typeof pvpZoneOK!=='function'||pvpZoneOK())&&!(typeof inHuntPZ==='function'&&inHuntPZ())}catch(e){return false}}
+function hitBot(b){if(!canHitBots()){toast('Aqui é zona de proteção.');return}Pl.botT=b;Pl.target=null;toast(`Atacando ${b.n}`);
+  if(!b.foe){b.foe=(b.l>=S.lvl*.7&&Math.random()<.7)||Math.random()<.25?'fight':'flee';b.path=null;b.plan=null;b.say=b.foe==='fight'?pick(['vem!','tá doido?','bora então','pk safado']):pick(['socorro','pk!!','sai fora']);b.sayT=2.5}
+  try{PK().white=Date.now()+15*60000}catch(e){}}
+function playerVsBot(dt){const b=Pl.botT;if(!b)return;if(!BOTS.list.includes(b)||S.hunt<0){Pl.botT=null;return}Pl.target=null;const d=D(),rg=VOC[S.voc].range||1,c=cheb(Pl,b);
+  if(c>rg){if(Pl.p>=1&&!Pl.joy&&!Pl.key){try{stepToward(Pl,b.x,b.y,1/d.tps)}catch(e){}}return}
+  Pl.botAt=(Pl.botAt||0)-dt;if(Pl.botAt>0)return;Pl.botAt=d.aspd||2;face(Pl,b.x-Pl.x,b.y-Pl.y);
+  const v=VOC[S.voc];const raw=v.skill==='ml'?(d.atk*.6+d.ml*1.2+d.L/5)*d.dmgM:(.1*d.atk*d.main+d.L/4+4)*d.dmgP;const dmg=Math.max(1,Math.round(raw*(.4+Math.random()*.6)));
+  b.hp-=dmg;try{floatT(b.x,b.y,String(dmg),'#ff6a5a');fx(b.x,b.y,'hit')}catch(e){}
+  if(b.hp<=0){try{fx(b.x,b.y,'area','death')}catch(e){}gone(b,`Você derrotou ${b.n}.`);try{PK().frags.push(Date.now());save()}catch(e){}}}
+try{cv.addEventListener('pointerup',e=>{try{if(!S||!Wd||S.hunt<0||!BOTS.list.length)return;const wx=CAM.x+e.clientX*DPR/SCALE,wy=CAM.y+e.clientY*DPR/SCALE;
+  for(const b of BOTS.list){const cx=b.rx*TS+16,cy=b.ry*TS+16;if(Math.abs(wx-cx)<=18&&Math.abs(wy-cy)<=22){hitBot(b);return}}}catch(x){}})}catch(e){}
 try{
-  const _up50=update;update=function(dt){const r=_up50.apply(this,arguments);try{botTick(dt)}catch(e){}return r};
+  const _up50=update;update=function(dt){const r=_up50.apply(this,arguments);try{botTick(dt)}catch(e){}try{playerVsBot(dt)}catch(e){}return r};
   // desenha os jogadores IA junto com os outros jogadores, só durante o desenho (fora disso eles não existem para PvP/lista)
   const _gu50=ghostsUpdate;ghostsUpdate=function(){_gu50.apply(this,arguments);try{if(botsOn())for(const b of BOTS.list)GHOSTS.push(b)}catch(e){}};
   const _dr50=draw;draw=function(){try{return _dr50.apply(this,arguments)}finally{try{if(GHOSTS.some(p=>p.bot))GHOSTS=GHOSTS.filter(p=>!p.bot)}catch(e){}}};
@@ -7752,7 +7791,7 @@ try{
     const real=GHOSTS.filter(p=>!p.bot),bots=GHOSTS.filter(p=>p.bot);
     const keep=GHOSTS;GHOSTS=real;try{_lg50.apply(this,arguments)}finally{GHOSTS=keep}
     for(const p of bots){const sx=(p.rx*TS+16-8-CAM.x)*SCALE,sy=(p.ry*TS-CAM.y-8)*SCALE;if(sx<-80||sy<-80||sx>cv.width+80||sy>cv.height+80)continue;
-      label(`${p.n} [${p.l}]`,sx,sy-8*DPR,'#8fd0ff');if(p.say)label(`"${p.say}"`,sx,sy-20*DPR,'#ffffff')}};
+      label(`${p.n} [${p.l}]`,sx,sy-8*DPR,p.foe==='fight'?'#ff8a7a':'#8fd0ff');if(p.max&&p.hp<p.max)try{bar(sx,sy-5*DPR,Math.max(0,p.hp/p.max))}catch(e){}if(p.say)label(`"${p.say}"`,sx,sy-20*DPR,'#ffffff')}};
 }catch(e){console.warn('eco50 bots',e)}
 
 // =====================================================================
@@ -7782,8 +7821,10 @@ try{
 // vibração curta ao subir de nível (celular)
 try{const _ge50=gainExp;gainExp=function(x){const l0=S&&S.lvl;const r=_ge50.apply(this,arguments);try{if(S&&S.lvl>l0&&navigator.vibrate)navigator.vibrate([40,60,40])}catch(e){}return r}}catch(e){}
 })();
+
 </script>
 <script id="eco51-js">
+
 // ===== v51: bots de teste no ranking e no online, 24 horas (liga e desliga pelo CHAR GOD) =====
 // Os bots ficam gravados no ranking com a marca b:1, debaixo da conta do GOD. Desligar apaga todos de uma vez.
 // Nível e online são calculados pelo relógio, igual em todos os aparelhos: funcionam mesmo com o GOD offline.
@@ -7798,12 +7839,18 @@ const brHour=t=>{try{return +new Intl.DateTimeFormat('pt-BR',{timeZone:'America/
 const peak=h=>h>=19&&h<=23?.68:h>=12&&h<19?.48:h>=7&&h<12?.38:.32;
 // mesmo resultado em qualquer aparelho
 const tbOnline=(b,t=now())=>{const slot=Math.floor(t/(20*60*1000));return hsh(b.k+'|'+slot)<peak(brHour(t))};
-const tbLevel=(b,t=now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);if(b.f>=2)return Math.max(8,Math.min(500,Math.round(500-(500-b.l0)*Math.exp(-(b.r||1)*0.003*days))));const r=b.r||1;return Math.max(1,Math.round(b.l0+r*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
-function skills(v,l,seed){const j=k=>Math.round(hsh(seed+k)*4);const g=x=>Math.max(10,Math.round(x));
-  return v==='druida'||v==='feiticeiro'?{ml:Math.round(l*.38)+j('a'),me:10,di:10,fi:10,sh:g(10+l*.05)+j('b')}
-   :v==='arqueiro'?{ml:Math.round(l*.12),me:10,di:g(12+l*.55)+j('c'),fi:10,sh:g(12+l*.3)+j('d')}
-   :v==='monge'?{ml:Math.round(l*.1),me:10,di:10,fi:g(12+l*.58)+j('e'),sh:g(10+l*.2)+j('f')}
-   :{ml:Math.round(l*.08),me:g(12+l*.6)+j('g'),di:10,fi:10,sh:g(12+l*.55)+j('h')}}
+// v58: nível dos bots igual em todo aparelho, calculado pela chave do bot (não depende do que está gravado). Sobe todo dia, devagar: 8→100 em ~1 mês, 300 em ~10 meses, 500 em ~2 anos e meio.
+const T0=Date.UTC(2026,9,26,3);
+const tbL0=K=>{const a=hsh(K+'#l0');return a<.4?8+a/.4*32:a<.75?40+(a-.4)/.35*60:a<.95?100+(a-.75)/.2*80:180+(a-.95)/.05*70};
+const tbLevel=(b,t=now())=>{const K=b.k||b.u||'';const r=.6+hsh(K+'#r')*.8,days=Math.max(0,(t-T0)/864e5);return Math.max(8,Math.min(500,Math.round(Math.pow(Math.pow(tbL0(K),2.2)+900*r*days,1/2.2))))};
+// skills no padrão Tibia: sobem rápido no começo e travam perto de 120~130 no nível 500
+const cvS=(l,c)=>1-Math.exp(-l/c);
+function SKF(v,l,seed){const j=k=>Math.round(hsh(seed+k)*6)-3,g=x=>Math.max(10,Math.round(x));
+  return v==='druida'||v==='feiticeiro'?{ml:Math.max(0,Math.round(4+116*cvS(l,160))+j('a')),me:10,di:10,fi:10,sh:g(10+20*cvS(l,150)+j('b'))}
+   :v==='arqueiro'?{ml:Math.round(3+22*cvS(l,200)),me:g(10+20*cvS(l,150)),di:g(10+115*cvS(l,130)+j('c')),fi:10,sh:g(10+75*cvS(l,140)+j('d'))}
+   :v==='monge'?{ml:Math.round(4+28*cvS(l,200)),me:10,di:10,fi:g(10+115*cvS(l,130)+j('e')),sh:g(10+80*cvS(l,140)+j('f'))}
+   :{ml:Math.round(2+9*cvS(l,200)),me:g(10+118*cvS(l,130)+j('g')),di:10,fi:10,sh:g(10+112*cvS(l,135)+j('h'))}}
+const skills=SKF;
 const live=(b,t=now())=>{const l=tbLevel(b,t);return Object.assign({},b,{l,...skills(b.v,l,b.k),t:tbOnline(b,t)?t:(b.c||t)-36e5})};
 window.ECO_TBLIVE=live;
 const NM_M=['Kaio','Thiago','Rafa','Davi','Enzo','Bruno','Leo','Igor','Caio','Murilo','Heitor','Vitor','Gael','Otavio','Ravi','Joca','Pedro','Lucas','Gabriel','Matheus','Diego','Felipe'];
@@ -7858,13 +7905,13 @@ async function del(k){try{await fetch(netURL('rank/'+k),{method:'DELETE'})}catch
 const mine=()=>TB.list.filter(b=>String(b.k).startsWith((NET.uid||'?')+'_tb'));
 function botRec(k,keep){const f=keep&&keep.x?keep.x==='f':Math.random()<.45,v=keep&&keep.v||pk(VOCS),l=lvlRoll(),days=rnd(3,45),c=now()-days*864e5,r=+(0.6+Math.random()*.8).toFixed(2);
   let l0=Math.round(500-(500-l)*Math.exp(r*0.003*days));l0=Math.max(8,Math.min(l,l0));
-  const b={b:1,f:3,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r};const L=tbLevel(b);return Object.assign(b,{l:L,...skills(v,L,k),t:now()})}
+  const b={b:1,f:4,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r};const L=tbLevel(b);return Object.assign(b,{l:L,...skills(v,L,k),t:now()})}
 const TARGET=70;
 async function create(n){await load();const used=new Set(mine().map(b=>b.k));let i=0,made=0;while(mine().length+made<n&&i<500){const k=`${NET.uid}_tb${i}`;i++;if(used.has(k))continue;await put(k,botRec(k));made++}await load()}
 // o GOD mantém a população: renova bots antigos (nomes e níveis novos) e completa até 70
 async function sync(){if(!godOn())return;await load();
   try{if(localStorage.getItem('eco-tb51-off')==='1')return}catch(e){}
-  for(const b of mine()){if(!(b.f>=3)){await put(b.k,Object.assign(botRec(b.k,b),b.n?{n:b.n}:{}))}}
+  for(const b of mine()){if(!(b.f>=4)){await put(b.k,Object.assign(botRec(b.k,b),b.n?{n:b.n}:{}))}}
   if(mine().length<TARGET)await create(TARGET);await load()}
 setInterval(sync,30*60*1000);setTimeout(sync,15000);
 async function wipe(){await load();for(const b of mine())await del(b.k);await load()}
@@ -7877,6 +7924,7 @@ try{
       <p style="margin:0 0 8px">Agora: <b>${n}</b> no ranking · <b>${o}</b> online</p><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><button class="btn sm pri" data-a="tb51" data-v="70">70 bots</button><button class="btn sm pri" data-a="tb51" data-v="100">100 bots</button><button class="btn sm" data-a="tb51" data-v="off">Desligar e apagar</button></div>`+r[1];return r};
 }catch(e){console.warn('eco51',e)}
 })();
+
 </script>
 <script id="eco52-js">
 // ===== v52: sugestões dos jogadores, eventos com horário marcado e painel do GOD =====
@@ -8407,4 +8455,23 @@ document.addEventListener('change',e=>{if(e.target&&e.target.id==='mk57s'){UI.mk
 // botão no menu
 try{const _mn57=SHEETS.menu;SHEETS.menu=function(){const r=_mn57.apply(this,arguments);try{r[1]=r[1].replace('<h3>Atividades</h3><div class="menu-sec">',`<h3>Atividades</h3><div class="menu-sec"><button class="mi" data-a="open" data-v="market57"><img src="${icon('moeda')}" alt="">Market</button>`)}catch(e){}return r}}catch(e){}
 })();
+</script>
+<script id="eco58-js">
+// ===== v58: skills no ritmo do Tibia (mais devagar; top fica perto de 120~130) =====
+(function(){
+'use strict';
+// base de tentativas e multiplicador por skill, por vocação (tabela parecida com a do Tibia)
+const A={melee:50,dist:30,fist:50,shield:100,ml:1600};
+const B={cavaleiro:{melee:1.1,dist:1.4,fist:1.2,shield:1.1,ml:3.0},
+  arqueiro:{melee:1.2,dist:1.1,fist:1.2,shield:1.1,ml:1.4},
+  druida:{melee:1.8,dist:1.8,fist:1.5,shield:1.5,ml:1.1},
+  feiticeiro:{melee:2.0,dist:2.0,fist:1.5,shield:1.5,ml:1.1},
+  monge:{melee:1.25,dist:1.4,fist:1.1,shield:1.15,ml:1.25}};
+try{skillNeed=function(k,v){const b=((B[S&&S.voc])||B.cavaleiro)[k]||1.3;const n=k==='ml'?A.ml*Math.pow(b,v):A[k]*Math.pow(b,Math.max(0,v-10));return Math.ceil(Math.min(n,1e15))}}catch(e){console.warn('eco58',e)}
+// rate por faixa: ajuda no começo e some depois (antes era 10x até a skill 60)
+const rate=(k,v)=>k==='ml'?(v<20?5:v<40?3:v<60?2:1):(v<40?5:v<60?3:v<80?2:1);
+window.ECO_SKRATE=rate;
+try{const old=window.eco46Rate,_at58=addTries;addTries=function(k,n){const s=S&&S.sk&&S.sk[k];if(!s||typeof old!=='function')return _at58.apply(this,arguments);const o=old(k,s.v)||1;return _at58.call(this,k,n*rate(k,s.v)/o)}}catch(e){console.warn('eco58',e)}
+})();
+
 </script>
