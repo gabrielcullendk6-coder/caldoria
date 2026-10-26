@@ -6814,8 +6814,22 @@ function charSelect(done){
    ${who?`<div class="acc">Conectado como ${esc57(who)}</div>`:''}</div>`;
   el.onclick=e=>{
     const g=e.target.closest('[data-go57]'),n=e.target.closest('[data-new57]'),d=e.target.closest('[data-del57]'),o=e.target.closest('[data-out57]');
-    if(g){const c=list.find(x=>x.id===g.getAttribute('data-go57'));if(c&&c.data){try{localStorage.setItem(KEY,c.data)}catch(e){}}
-      try{done57()}catch(e){}location.reload();return}
+    if(g){const c=list.find(x=>x.id===g.getAttribute('data-go57'));if(!c||!c.data)return;
+      try{localStorage.setItem(KEY,c.data)}catch(e){}
+      pend57=false;try{done57()}catch(e){}
+      const el2=document.getElementById('csel57');if(el2)el2.remove();
+      try{
+        S=JSON.parse(c.data);
+        if(typeof prepareState==='function')prepareState();
+        if(typeof boot2==='function')boot2();
+        if(typeof save==='function')save();
+        const gap=(Date.now()-(S.last||Date.now()))/1000;
+        if(gap>60&&typeof offline==='function')offline(gap);
+        if(typeof tutorialRender==='function')tutorialRender();
+        if(typeof hud==='function')hud();
+        if(typeof window.ecoLay59==='function')setTimeout(window.ecoLay59,120);
+      }catch(e){try{location.reload()}catch(x){}}
+      return}
     if(n){try{localStorage.removeItem(KEY)}catch(e){}go();return}
     if(d){const id=d.getAttribute('data-del57');if(del57!==id){del57=id;charSelect(done);return}
       del57=null;try{const r=rosterGet();delete r[id];localStorage.setItem(ROSTER,JSON.stringify(r));localStorage.removeItem('eco-char-'+id);
@@ -6827,24 +6841,34 @@ function charSelect(done){
 }
 window.charSelect57=charSelect;
 // ---------- 4. a seleção entra no lugar do carregamento automático ----------
-const SELK='eco-sel57';
-let pend57=false;try{pend57=sessionStorage.getItem(SELK)!=='done'}catch(e){pend57=false}
-function done57(){try{sessionStorage.setItem(SELK,'done');sessionStorage.setItem('eco43act','1');sessionStorage.setItem('eco-cloud-rl','1')}catch(e){}}
+var SELK='eco-sel57';
+var pend57=false;try{pend57=sessionStorage.getItem(SELK)!=='done'}catch(e){pend57=false}
+var done57=function(){try{sessionStorage.setItem(SELK,'done');sessionStorage.setItem('eco43act','1');sessionStorage.setItem('eco-cloud-rl','1')}catch(e){}};
 if(pend57){
   if(typeof load==='function'){const _ld57=load;load=function(){if(pend57)return null;return _ld57.apply(this,arguments)}}
   if(typeof creation==='function'){const _cr57=creation;creation=function(){if(!pend57)return _cr57.apply(this,arguments);
     return charSelect(function(){pend57=false;done57();_cr57()})}}
 }
 // ---------- 4b. uma única tela de entrada: se já está na tela, espera ela terminar ----------
+var PEND_DONE57=null;
+// trava de segurança: se a tela de entrada travar, o jogo entra assim mesmo
+setTimeout(function(){try{
+  if(typeof S!=='undefined'&&S)return;
+  if(document.getElementById('csel57'))return;
+  const g=document.getElementById('gate');if(!g)return;
+  const d=PEND_DONE57;if(!d)return;
+  g.remove();PEND_DONE57=null;try{d()}catch(e){}
+}catch(e){}},15000);
 if(typeof gateShow==='function'){const _gs57=gateShow;gateShow=function(done){
+  PEND_DONE57=done;
   const g=document.getElementById('gate');
   if(g&&g.querySelector('.eco40-entry')){
-    let fired=false;const fin=()=>{if(fired)return;fired=true;try{mo.disconnect()}catch(e){}clearInterval(iv);try{done()}catch(e){}};
+    let fired=false;const fin=()=>{if(fired)return;fired=true;try{mo.disconnect()}catch(e){}clearInterval(iv);PEND_DONE57=null;try{done()}catch(e){}};
     const mo=new MutationObserver(()=>{if(!document.body.contains(g))fin()});
     try{mo.observe(document.body,{childList:true})}catch(e){}
     const iv=setInterval(()=>{if(!document.body.contains(g))fin()},400);
     return}
-  return _gs57(done)}}
+  return _gs57(function(){PEND_DONE57=null;try{done()}catch(e){}})}}
 // ---------- 4c. a tela de entrada antiga às vezes responde depois de sair: ignora o aviso ----------
 addEventListener('error',function(e){try{if(e&&e.message&&/textContent/.test(e.message)&&!document.getElementById('gate')&&(typeof S==='undefined'||!S||true)){const st=(e.error&&e.error.stack)||'';if(/showResume|proceed|showVerify/.test(st)){e.preventDefault();e.stopImmediatePropagation()}}}catch(x){}},true);
 // ---------- 5. trocar de personagem dentro do jogo, sem perder nada ----------
@@ -6898,14 +6922,6 @@ drawPlayer=function(g,px,py,tt){
     try{if(has&&dir==='N')wings58(g,x,y,tt,W,1,dir)}catch(e){}
     WSKIP58=false}
   return r};
-// sombra: uma só, no chão, do tamanho certo — e as asas alargam a sombra sem mudar de lugar
-if(typeof drawGround==='function'){const _dg58=drawGround;drawGround=function(g,t){
-  const r=_dg58.apply(this,arguments);
-  try{if(S&&Wd&&S.cfgShadow!==false){const W=wingOf();if(W&&W.c){
-    const x=Pl.p<1?lerp(Pl.px,Pl.x,Pl.p):Pl.x,y=Pl.p<1?lerp(Pl.py,Pl.y,Pl.p):Pl.y,d=(Pl&&Pl.dir)||'S';
-    const rx=(d==='E'||d==='W')?8:15;
-    g.save();g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(x*TS-CAM.x+16,y*TS-CAM.y+30,rx,rx*.36,0,0,7);g.fill();g.restore()}}}catch(e){}
-  return r}}
 })();
 
 // ===== v59: interface de celular (em pé e deitado) sem sobreposição, alvos de toque maiores =====
@@ -7056,7 +7072,7 @@ const CA={};
 function bc(n){if(CA[n]!==undefined)return CA[n];const p=BC_POS[n];if(!p||!OK)return CA[n]=null;
   const c=document.createElement('canvas');c.width=p[2];c.height=p[3];const g=c.getContext('2d');g.imageSmoothingEnabled=false;
   g.drawImage(IMG,p[0],p[1],p[2],p[3],0,0,p[2],p[3]);return CA[n]=c}
-const on60=()=>{try{return localStorage.getItem('eco-bcscn')!=='0'}catch(e){return true}};
+const on60=()=>true;
 // ---------- 1. enfeites do chão das hunts ----------
 const DMAP={pebble:['rock1'],rock:['rock2','rock1'],mushroom:['mush1','mush2'],bone:['bones'],skull:['grave','cross'],tuft:['tuft1','tuft2'],moss:['tuft2','fl_w']};
 if(typeof decoSprite==='function'){const _ds60=decoSprite;
@@ -7064,15 +7080,12 @@ if(typeof decoSprite==='function'){const _ds60=decoSprite;
 // ---------- 2. camada de cenário por tema ----------
 // [nome, peso] — "bloq" vai em cima de parede (enche o mapa de árvore/pedra), "livre" é enfeite no chão
 const SCN={
- forest:{bloq:[['tree_g1',3],['tree_g2',3],['tree_d1',3],['tree_d2',2],['tree_o1',1]],
-         livre:[['bush_g',3],['bush_d',2],['tuft1',4],['tuft2',3],['fl_w',2],['fl_p',2],['fl_y',1],['mush1',1],['stump2',1]],pb:.72,pl:.1},
- swamp:{bloq:[['tree_x1',3],['tree_x2',2],['tree_d2',2],['bush_x',2]],
-        livre:[['lily1',3],['lily2',2],['pud1',2],['pud2',2],['pud3',2],['tuft2',3],['mush2',1],['log_h',1]],pb:.6,pl:.12},
- dirt:{bloq:[['rock2',3],['tree_x1',2],['stump2',2],['bush_x',2]],
-       livre:[['dry1',3],['dry2',3],['rock1',3],['tuft2',2],['stump1',1]],pb:.4,pl:.09},
- stone:{bloq:[['rock2',4],['rock1',2],['basket',1]],livre:[['rock1',4],['dry2',2],['pud3',1]],pb:.35,pl:.05},
- crypt:{bloq:[['grave',3],['cross',2],['rock2',2]],livre:[['dry2',3],['rock1',3],['mush2',1],['bones',1]],pb:.4,pl:.05},
- brick:{bloq:[['basket',2],['rock2',2],['log2',1]],livre:[['dry2',2],['rock1',2],['bones',1]],pb:.3,pl:.06},
+ forest:{bloq:[],livre:[['tuft1',5],['tuft2',4],['fl_w',3],['fl_p',2],['fl_y',2],['fl_b',1],['mush1',1],['rock1',1]],pb:0,pl:.11},
+ swamp:{bloq:[],livre:[['lily1',3],['lily2',2],['pud1',2],['pud2',2],['tuft2',4],['mush2',1],['dry2',2]],pb:0,pl:.1},
+ dirt:{bloq:[],livre:[['dry1',3],['dry2',3],['rock1',3],['tuft2',2],['stump1',1]],pb:0,pl:.09},
+ stone:{bloq:[],livre:[['rock1',4],['dry2',2],['pud3',1]],pb:0,pl:.05},
+ crypt:{bloq:[],livre:[['dry2',3],['rock1',3],['mush2',1],['bones',1]],pb:0,pl:.05},
+ brick:{bloq:[],livre:[['dry2',2],['rock1',2],['bones',1]],pb:0,pl:.05},
  town:{bloq:[],livre:[['tuft1',3],['fl_w',2],['fl_p',2],['fl_b',1],['fl_y',1]],pb:0,pl:.05}
 };
 function roll(list){let s=0;for(const it of list)s+=it[1];return s}
@@ -7080,33 +7093,237 @@ function pickW(list,r){let s=roll(list),a=r*s;for(const it of list){a-=it[1];if(
 function hsh(x,y,s){let h=(x*374761393+y*668265263+s*362437)|0;h=(h^(h>>13))*1274126177|0;return((h^(h>>16))>>>0)/4294967296}
 let seed60=0;
 function wseed(){try{return((Wd&&(Wd.seed||0))|0)+((S&&S.hunt||0)*7919)+((S&&S.hf||0)*104729)}catch(e){return 1}}
-if(typeof drawGround==='function'){const _dg60=drawGround;
- drawGround=function(g,t){const r=_dg60.apply(this,arguments);
+// desenha uma vez no mapa (não gasta nada por quadro)
+function paint60(){
   try{
-   if(!OK||!on60()||typeof Wd==='undefined'||!Wd||!Wd.m)return r;
-   const th=(Wd.town||Wd.city)?'town':(Wd.theme||'dirt'),cfg=SCN[th];if(!cfg)return r;
-   const sd=wseed();
-   const x0=Math.max(0,Math.floor(CAM.x/TS)-1),y0=Math.max(0,Math.floor(CAM.y/TS)-2);
-   const x1=Math.min(Wd.w-1,x0+Math.ceil(innerWidth/TS)+3),y1=Math.min(Wd.h-1,y0+Math.ceil(innerHeight/TS)+4);
-   g.save();g.imageSmoothingEnabled=false;
-   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-     const blk=Wd.m[y*Wd.w+x],h=hsh(x,y,sd);
-     let name=null;
-     if(blk){if(!cfg.bloq.length||h>cfg.pb)continue;name=pickW(cfg.bloq,hsh(x,y,sd+11))}
-     else{if(h>cfg.pl)continue;name=pickW(cfg.livre,hsh(x,y,sd+23))}
-     const c=bc(name);if(!c)continue;
-     const px=Math.round(x*TS-CAM.x+16-c.width/2),py=Math.round(y*TS-CAM.y+32-c.height);
-     if(c.height>40){g.save();g.globalAlpha=.25;g.fillStyle='#000';g.beginPath();g.ellipse(px+c.width/2,py+c.height-3,c.width*.3,c.width*.12,0,0,7);g.fill();g.restore()}
-     g.drawImage(c,px,py)}
-   g.restore();
-  }catch(e){}
-  return r}}
-// ---------- 3. liga/desliga ----------
-if(typeof ACT!=='undefined'){ACT.gfxscn=()=>{try{localStorage.setItem('eco-bcscn',on60()?'0':'1')}catch(e){}
-  try{toast('Cenário '+(on60()?'ligado':'desligado')+'.')}catch(e){}try{renderSheet()}catch(e){}};
- if(typeof SHEETS!=='undefined'&&SHEETS.config){const _cf60=SHEETS.config;SHEETS.config=function(){const r=_cf60.apply(this,arguments);
-   try{r[1]=r[1].replace('<h3>Gráficos</h3>',`<h3>Gráficos</h3><div class="row" style="margin-bottom:8px"><button class="btn sm ${on60()?'pri':''}" data-a="gfxscn">Cenário novo: ${on60()?'ON':'OFF'}</button></div>`)}catch(e){}return r}}}
+    if(!OK||typeof Wd==='undefined'||!Wd||!Wd.tex||!Wd.m)return;
+    const tex=Wd.tex;if(tex._bc60)return;
+    const th=(Wd.town||Wd.city)?'town':(Wd.theme||'dirt'),cfg=SCN[th];if(!cfg){tex._bc60=1;return}
+    const g=tex.getContext&&tex.getContext('2d');if(!g)return;
+    tex._bc60=1;
+    const sd=wseed();g.save();g.imageSmoothingEnabled=false;
+    for(let y=0;y<Wd.h;y++)for(let x=0;x<Wd.w;x++){
+      if(Wd.m[y*Wd.w+x])continue;
+      if(tex._wat&&tex._wat[y*Wd.w+x])continue;
+      if(hsh(x,y,sd)>cfg.pl)continue;
+      const c=bc(pickW(cfg.livre,hsh(x,y,sd+23)));if(!c)continue;
+      g.drawImage(c,Math.round(x*TS+16-c.width/2),Math.round(y*TS+32-c.height))}
+    g.restore();
+  }catch(e){}}
+window.paint60=paint60;
+if(typeof loadWorld==='function'){const _lw60=loadWorld;loadWorld=function(){const r=_lw60.apply(this,arguments);try{paint60()}catch(e){}return r}}
+if(typeof drawGround==='function'){const _dg60=drawGround;let n=0;
+  drawGround=function(g,t){if((n++&31)===0)paint60();return _dg60.apply(this,arguments)}}
 READY.then(()=>{try{for(const k in CA)delete CA[k]}catch(e){}});
+})();
+
+// ===== v63: animação certa para cada tipo de criatura =====
+// anda (tem perna) · voa (tem asa / não tem perna) · gosma (corpo sem perna)
+(function(){
+if(typeof ARTK!=='object')return;
+const SRC={},BUILT={},KIND={};window.LIMB61=SRC;window.LIMBKIND=KIND;
+const cv61=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;return[c,g]};
+// ---------- leitura do sprite: onde está o corpo, se tem perna, se tem asa, se tem sombra solta ----------
+const ANA=new WeakMap();
+function analyse(src){
+  if(ANA.has(src))return ANA.get(src);
+  let r={bx:0,by:0,bw:src.width,bh:src.height,kind:'walk',shadowTop:-1};
+  try{
+    const g=src.getContext&&src.getContext('2d');
+    if(g){
+      const W=src.width,H=src.height,d=g.getImageData(0,0,W,H).data;
+      const minX=new Int32Array(H).fill(1e9),maxX=new Int32Array(H).fill(-1),cnt=new Int32Array(H);
+      let x0=1e9,y0=1e9,x1=-1,y1=-1;
+      for(let y=0;y<H;y++){for(let x=0;x<W;x++){if(d[(y*W+x)*4+3]<16)continue;
+        cnt[y]++;if(x<minX[y])minX[y]=x;if(x>maxX[y])maxX[y]=x;
+        if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+      if(x1>=0){
+        let bx=x0,by=y0,bw=x1-x0+1,bh=y1-y0+1;
+        // sombra solta: linha vazia perto da base com desenho abaixo dela
+        let shadowTop=-1;
+        for(let y=y1;y>y0+Math.round(bh*0.55);y--){if(cnt[y]===0){
+          let below=0;for(let k=y+1;k<=y1;k++)below+=cnt[k];
+          if(below>0){shadowTop=y;break}}}
+        if(shadowTop>0){let yy=shadowTop-1;while(yy>by&&cnt[yy]===0)yy--;y1=yy;bh=y1-by+1}
+        // larguras por linha
+        let maxW=0,yMaxW=by;
+        for(let y=by;y<=y1;y++){const w=maxX[y]<0?0:maxX[y]-minX[y]+1;if(w>maxW){maxW=w;yMaxW=y}}
+        const wAt=f=>{const y=Math.min(y1,by+Math.round(bh*f));return maxX[y]<0?0:maxX[y]-minX[y]+1};
+        // ASA: muitas linhas largas e base bem mais estreita que o vão das asas
+        let wideRows=0;for(let y=by;y<=y1;y++){const w=maxX[y]<0?0:maxX[y]-minX[y]+1;if(w>=maxW*0.72)wideRows++}
+        const baseW=Math.max(wAt(0.82),wAt(0.88));
+        const wings=maxW>6&&wideRows>=Math.max(3,bh*0.12)&&baseW<=maxW*0.68&&yMaxW<by+bh*0.72;
+        // PERNA: existe um vão no meio em alguma linha da metade de baixo
+        let legGap=false;
+        for(let y=by+Math.round(bh*0.5);y<=y1&&!legGap;y++){
+          const run=[];let on=false,st=0;
+          for(let x=bx;x<bx+bw;x++){const aa=d[(y*W+x)*4+3]>=16;
+            if(aa&&!on){on=true;st=x}else if(!aa&&on){on=false;run.push([st,x-1])}}
+          if(on)run.push([st,bx+bw-1]);
+          for(let i=1;i<run.length;i++){const g0=run[i-1][1]+1,g1=run[i][0]-1;
+            if(g1-g0+1<1)continue;
+            if(run[i-1][1]-run[i-1][0]+1<2||run[i][1]-run[i][0]+1<2)continue;   // dois blocos com corpo
+            const cmid=(g0+g1)/2,rel=(cmid-bx)/bw;if(rel>=0.32&&rel<=0.68){legGap=true;break}}}
+        const legs=!wings&&bh>=12&&legGap;
+        // sprite desenhado com sombra solta e sem perna = criatura que flutua
+        const kind=wings?'fly':(legs?'walk':(shadowTop>0?'fly':'blob'));
+        r={bx,by,bw,bh,kind,shadowTop}}
+    }
+  }catch(e){}
+  ANA.set(src,r);return r}
+window.analyse61=analyse;
+// ---------- os quadros ----------
+function frames61(src,forceKind){
+  const A=analyse(src),W=src.width,H=src.height;
+  const bx=A.bx,by=A.by,bw=A.bw,bh=A.bh,kind=forceKind||A.kind;
+  const bodyBottom=A.shadowTop>0?A.shadowTop:by+bh;      // até onde o corpo vai
+  const shTop=A.shadowTop;                                // sombra do sprite fica parada
+  const out=[];
+  const drawBody=(g,fn)=>{ // desenha só o corpo (sem a sombra do sprite)
+    g.save();fn(g);
+    if(shTop>0)g.drawImage(src,0,0,W,shTop,0,0,W,shTop);
+    else g.drawImage(src,0,0);
+    g.restore();
+    if(shTop>0)g.drawImage(src,0,shTop,W,H-shTop,0,shTop,W,H-shTop)};
+  if(kind==='walk'){
+    const legTop=by+Math.round(bh*0.58),armTop=by+Math.round(bh*0.26);
+    const aw=Math.max(2,Math.round(bw*0.22)),th=legTop-armTop;
+    const SW=Math.max(1,Math.round(bw*0.09)),LIFT=Math.max(1,Math.round(bh*0.055)),ASW=Math.max(1,Math.round(bh*0.035));
+    for(let f=0;f<4;f++){
+      const p=[0,1,0,-1][f],oy=(f===1||f===3)?-Math.max(1,Math.round(bh*0.035)):0;
+      const [c,g]=cv61(W,H);
+      g.save();g.translate(bx+bw/2,legTop+oy);g.rotate(p*0.03);g.translate(-(bx+bw/2),-legTop);
+      if(armTop>0)g.drawImage(src,0,0,W,armTop,0,0,W,armTop);
+      if(th>0){const cw=Math.max(1,bw-aw*2);
+        g.drawImage(src,bx+aw,armTop,cw,th,bx+aw,armTop,cw,th);
+        if(bx>0)g.drawImage(src,0,armTop,bx,th,0,armTop,bx,th);
+        const rr=W-(bx+bw);if(rr>0)g.drawImage(src,bx+bw,armTop,rr,th,bx+bw,armTop,rr,th)}
+      g.restore();
+      if(th>0){
+        g.drawImage(src,bx,armTop,aw,th,bx+(p<0?1:0),armTop+oy+(p<0?-ASW:p>0?1:0),aw,th);
+        g.drawImage(src,bx+bw-aw,armTop,aw,th,bx+bw-aw-(p>0?1:0),armTop+oy+(p>0?-ASW:p<0?1:0),aw,th)}
+      const lh=bodyBottom-legTop,hw=Math.ceil(bw/2);
+      if(lh>0&&bw>1){const lUp=p>0,rUp=p<0;
+        g.drawImage(src,bx,legTop,hw,lh,bx+(lUp?SW:0),legTop+oy-(lUp?LIFT:0),hw,lh);
+        g.drawImage(src,bx+hw,legTop,bw-hw,lh,bx+hw-(rUp?SW:0),legTop+oy-(rUp?LIFT:0),bw-hw,lh)}
+      if(shTop>0)g.drawImage(src,0,shTop,W,H-shTop,0,shTop,W,H-shTop);
+      out.push(c)}
+    const [cb,gb]=cv61(W,H);
+    drawBody(gb,g=>{g.translate(bx+bw/2,bodyBottom);g.scale(.985,1.03);g.translate(-(bx+bw/2),-bodyBottom)});
+    out.push(cb)}
+  else if(kind==='fly'){
+    // flutua e bate asa: o meio fica, as laterais sobem/descem e encolhem
+    const cw=Math.max(2,Math.round(bw*0.34)),cx0=bx+Math.round((bw-cw)/2);
+    const UP=[0,-1,-2,-1],FLAP=[1,.84,1,.84],RISE=[0,1,2,1];
+    for(let f=0;f<4;f++){
+      const [c,g]=cv61(W,H);
+      const hy=by+Math.round(bh*0.5),lw=cx0-bx,rw=bx+bw-(cx0+cw);
+      const bodyH=bodyBottom-by;
+      // asa esquerda
+      if(lw>0){g.save();g.translate(cx0,hy+UP[f]);g.scale(FLAP[f],1);g.translate(-cx0,-(hy));
+        g.drawImage(src,bx,by,lw,bodyH,bx,by+UP[f]-RISE[f],lw,bodyH);g.restore()}
+      // asa direita
+      if(rw>0){g.save();g.translate(cx0+cw,hy+UP[f]);g.scale(FLAP[f],1);g.translate(-(cx0+cw),-(hy));
+        g.drawImage(src,cx0+cw,by,rw,bodyH,cx0+cw,by+UP[f]-RISE[f],rw,bodyH);g.restore()}
+      // corpo flutuando
+      g.drawImage(src,cx0,by,cw,bodyH,cx0,by+UP[f],cw,bodyH);
+      if(shTop>0){g.save();g.globalAlpha=1-Math.abs(UP[f])*0.12;g.drawImage(src,0,shTop,W,H-shTop,0,shTop,W,H-shTop);g.restore()}
+      out.push(c)}
+    const [cb,gb]=cv61(W,H);
+    gb.drawImage(src,0,0,W,shTop>0?shTop:H,0,-1,W,shTop>0?shTop:H);
+    if(shTop>0)gb.drawImage(src,0,shTop,W,H-shTop,0,shTop,W,H-shTop);
+    out.push(cb)}
+  else{ // gosma: espicha e achata
+    const SQ=[[1,1,0],[1.06,.94,0],[1,1,0],[.95,1.06,-1]];
+    for(let f=0;f<4;f++){
+      const [c,g]=cv61(W,H),s=SQ[f];
+      drawBody(g,gg=>{gg.translate(bx+bw/2,bodyBottom+s[2]);gg.scale(s[0],s[1]);gg.translate(-(bx+bw/2),-bodyBottom)});
+      out.push(c)}
+    const [cb,gb]=cv61(W,H);
+    drawBody(gb,g=>{g.translate(bx+bw/2,bodyBottom);g.scale(1.02,.97);g.translate(-(bx+bw/2),-bodyBottom)});
+    out.push(cb)}
+  return out}
+window.frames61=frames61;
+function regLimb(base,byDir,kind){if(!byDir||!byDir[0])return;SRC[base]=byDir;if(kind)KIND[base]=kind}
+window.regLimb61=regLimb;
+function build61(base){if(BUILT[base])return;BUILT[base]=1;const by=SRC[base];if(!by)return;
+  let k=KIND[base];if(!k){try{k=analyse(by[0]).kind;KIND[base]=k}catch(e){}}
+  const cache=new Map();
+  for(let d=0;d<4;d++){const s=by[d]||by[0];let fr=cache.get(s);if(!fr){fr=frames61(s,k);cache.set(s,fr)}
+    for(let f=0;f<5;f++){ARTK[`${base}_${d}_${f}`]=fr[f];if(typeof HDC49==='object')HDC49[`${base}_${d}_${f}`]=null}}}
+const _fk61=frameKey;
+frameKey=function(base,dir,moving,t){
+  if(base&&SRC[base]){if(!BUILT[base])build61(base);
+    const d=(typeof DIRI==='object'&&DIRI[dir]!=null)?DIRI[dir]:2;
+    const k=KIND[base]||'walk';
+    if(k==='fly')return `${base}_${d}_${Math.floor(t*(moving?7:4.5))%4}`;   // asa bate sempre
+    if(moving)return `${base}_${d}_${Math.floor(t*(k==='blob'?5:8))%4}`;
+    return `${base}_${d}_${(Math.floor(t*1.5)%2)?4:0}`}
+  return _fk61.apply(this,arguments)};
+// qual criatura é de que tipo: o dado do jogo manda, o sprite decide o resto
+function kindOf(id){try{
+  const d=(typeof MOBS==='object'&&MOBS[id])||null;if(!d)return null;
+  if(typeof FLY==='function'&&FLY(d.shape))return 'fly';
+  if(d.shape==='slime')return 'blob';
+  if(d.fly||d.voa)return 'fly';
+}catch(e){}return null}
+window.kindOf61=kindOf;
+if(typeof regMob16==='function'){const _rm61=regMob16;
+  regMob16=function(src,scale){const idx=_rm61.apply(this,arguments),base='o'+idx;
+    try{const b=ARTK[`${base}_0_0`],fl=ARTK[`${base}_1_0`];if(b)regLimb(base,[b,fl||b,b,b])}catch(e){}
+    return idx}}
+if(typeof ppReg==='function'){const _pp61=ppReg;
+  ppReg=function(name,scale){const idx=_pp61.apply(this,arguments);if(!idx)return idx;const base='o'+idx;
+    try{const b=ARTK[`${base}_0_0`];if(b)regLimb(base,[b,b,b,b])}catch(e){}
+    return idx}}
+// depois que as criaturas existem, o dado do jogo corrige o tipo de quem voa
+(function(){let n=0;const iv=setInterval(()=>{try{
+  if(typeof LOOK!=='object')return;let any=false;
+  for(const id in LOOK){const L=LOOK[id];if(typeof L!=='string')continue;const base='o'+L;if(!SRC[base]||KIND[base])continue;
+    const k=kindOf(id);if(k){KIND[base]=k;if(BUILT[base]){BUILT[base]=0;build61(base)}any=true}}
+  if(++n>12)clearInterval(iv)}catch(e){clearInterval(iv)}},1500)})();
+})();
+
+// ===== v62: entrar sem recarregar, uma floresta só, sombra no pé e água melhor =====
+(function(){
+// ---------- 2. sombra encostada no pé (antes ficava embaixo, parecia que flutuava) ----------
+(function(){
+ if(typeof drawGround!=='function')return;
+ const _dg62=drawGround;
+ drawGround=function(g,t){
+   if(typeof S!=='undefined'&&S)S.cfgShadow=false;      // desliga a sombra antiga, desalinhada
+   const r=_dg62.apply(this,arguments);
+   try{
+    if(typeof Wd==='undefined'||!Wd||typeof S==='undefined'||!S)return r;
+    if(S.cfgShadow62===false)return r;
+    g.save();g.fillStyle='rgba(0,0,0,.33)';
+    const base=(x,y,rx,ry)=>{g.beginPath();g.ellipse(x*TS-CAM.x+16,y*TS-CAM.y+25,rx,ry,0,0,7);g.fill()};
+    for(const m of Wd.mobs){
+      const mx=m.p<1?lerp(m.px,m.x,m.p):m.x,my=m.p<1?lerp(m.py,m.y,m.p):m.y;
+      const L=(m.d&&m.d.lvl)||(typeof MOBLVL!=='undefined'&&MOBLVL[m.id])||1;
+      const rr=m.d&&m.d.boss?17:Math.min(16,9+L/300);base(mx,my,rr,rr*.38)}
+    for(const n of (Wd.npcs||[]))base(n.x,n.y,10,3.8);
+    const px=Pl.p<1?lerp(Pl.px,Pl.x,Pl.p):Pl.x,py=Pl.p<1?lerp(Pl.py,Pl.y,Pl.p):Pl.y;
+    let rx=11;try{const W=typeof wingOf==='function'&&wingOf();if(W&&W.c)rx=(Pl.dir==='E'||Pl.dir==='W')?12:15}catch(e){}
+    base(px,py,rx,rx*.36);
+    g.restore();
+   }catch(e){}
+   return r}
+})();
+// ---------- 4. ícone quebrado no menu (img src="null") ----------
+if(typeof micon==='function'){const _mi62=micon;
+  micon=function(k){let r=null;try{r=_mi62.apply(this,arguments)}catch(e){}
+    if(r)return r;
+    try{for(const alt of ['tarefa','livro','ficha','mapa','coroa','pvp'])
+      {const a=_mi62(alt);if(a)return a}}catch(e){}
+    try{const [c,g]=mk(16,16);g.fillStyle='#c9a24a';g.fillRect(2,3,12,10);g.fillStyle='#1b1610';g.fillRect(4,5,8,2);g.fillRect(4,8,8,2);return c.toDataURL()}catch(e){}
+    return ''}}
+// ---------- 3. água do porto com textura (em vez do retângulo azul chapado) ----------
+(function(){try{
+  if(typeof GMAP!=='object'||typeof PT_POS!=='object')return;
+  const w=PT_POS.Water2?'Water2':(PT_POS.Water1?'Water1':null);if(!w)return;
+  for(const gid of [2260,163,164,165])GMAP[gid]=w;
+}catch(e){}})();
 })();
 
 </script>
