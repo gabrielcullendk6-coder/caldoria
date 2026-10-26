@@ -7798,7 +7798,7 @@ const brHour=t=>{try{return +new Intl.DateTimeFormat('pt-BR',{timeZone:'America/
 const peak=h=>h>=19&&h<=23?.68:h>=12&&h<19?.48:h>=7&&h<12?.38:.32;
 // mesmo resultado em qualquer aparelho
 const tbOnline=(b,t=now())=>{const slot=Math.floor(t/(20*60*1000));return hsh(b.k+'|'+slot)<peak(brHour(t))};
-const tbLevel=(b,t=now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);if(b.f===2)return Math.max(8,Math.min(500,Math.round(500-(500-b.l0)*Math.exp(-(b.r||1)*0.003*days))));const r=b.r||1;return Math.max(1,Math.round(b.l0+r*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
+const tbLevel=(b,t=now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);if(b.f>=2)return Math.max(8,Math.min(500,Math.round(500-(500-b.l0)*Math.exp(-(b.r||1)*0.003*days))));const r=b.r||1;return Math.max(1,Math.round(b.l0+r*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
 function skills(v,l,seed){const j=k=>Math.round(hsh(seed+k)*4);const g=x=>Math.max(10,Math.round(x));
   return v==='druida'||v==='feiticeiro'?{ml:Math.round(l*.38)+j('a'),me:10,di:10,fi:10,sh:g(10+l*.05)+j('b')}
    :v==='arqueiro'?{ml:Math.round(l*.12),me:10,di:g(12+l*.55)+j('c'),fi:10,sh:g(12+l*.3)+j('d')}
@@ -7827,7 +7827,7 @@ function nick1(f){const F=f?FF:FM;const r=Math.random();let n;
   if(r<.30)n=`${pk(F)} ${pk(SUR)}`;else if(r<.43)n=`${pk(f?TIT_F:TIT_M)} ${pk(F)}`;else if(r<.53)n=`${pk(F)} de ${pk(CITY)}`;else if(r<.63)n=`${pk(ADJ)} ${pk(F)}`;
   else if(r<.78)n=`${pk(F)} ${pk(f?EPF:EPI)}`;else if(r<.90)n=`${syl()} ${syl()}`;else n=syl();
   return n}
-const lvlRoll=()=>{const r=Math.random();return r<.30?rnd(8,60):r<.60?rnd(60,150):r<.85?rnd(150,300):rnd(300,480)};
+const lvlRoll=()=>{const r=Math.random();return r<.40?rnd(8,40):r<.70?rnd(40,100):r<.90?rnd(100,180):rnd(180,280)};
 const VOCS=['cavaleiro','arqueiro','druida','feiticeiro','monge'];
 const godOn=()=>{try{return typeof isGod==='function'&&isGod()&&typeof netOn==='function'&&netOn()}catch(e){return false}};
 const DBU=()=>{try{const c=(window.ECO_CONFIG||{}).online||{};return String(c.databaseURL||'').replace(/\/$/,'')}catch(e){return''}};
@@ -7856,15 +7856,15 @@ try{const _on51=SHEETS.online;SHEETS.online=function(){const r=_on51.apply(this,
 async function put(k,o){try{await fetch(netURL('rank/'+k),{method:'PUT',body:JSON.stringify(o)})}catch(e){}}
 async function del(k){try{await fetch(netURL('rank/'+k),{method:'DELETE'})}catch(e){}}
 const mine=()=>TB.list.filter(b=>String(b.k).startsWith((NET.uid||'?')+'_tb'));
-function botRec(k,keep){const f=keep&&keep.x?keep.x==='f':Math.random()<.45,v=keep&&keep.v||pk(VOCS),l=lvlRoll(),days=rnd(5,120),c=now()-days*864e5,r=+(0.6+Math.random()*.8).toFixed(2);
+function botRec(k,keep){const f=keep&&keep.x?keep.x==='f':Math.random()<.45,v=keep&&keep.v||pk(VOCS),l=lvlRoll(),days=rnd(3,45),c=now()-days*864e5,r=+(0.6+Math.random()*.8).toFixed(2);
   let l0=Math.round(500-(500-l)*Math.exp(r*0.003*days));l0=Math.max(8,Math.min(l,l0));
-  const b={b:1,f:2,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r};const L=tbLevel(b);return Object.assign(b,{l:L,...skills(v,L,k),t:now()})}
+  const b={b:1,f:3,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r};const L=tbLevel(b);return Object.assign(b,{l:L,...skills(v,L,k),t:now()})}
 const TARGET=70;
 async function create(n){await load();const used=new Set(mine().map(b=>b.k));let i=0,made=0;while(mine().length+made<n&&i<500){const k=`${NET.uid}_tb${i}`;i++;if(used.has(k))continue;await put(k,botRec(k));made++}await load()}
 // o GOD mantém a população: renova bots antigos (nomes e níveis novos) e completa até 70
 async function sync(){if(!godOn())return;await load();
   try{if(localStorage.getItem('eco-tb51-off')==='1')return}catch(e){}
-  for(const b of mine()){if(b.f!==2){await put(b.k,botRec(b.k,b))}}
+  for(const b of mine()){if(!(b.f>=3)){await put(b.k,Object.assign(botRec(b.k,b),b.n?{n:b.n}:{}))}}
   if(mine().length<TARGET)await create(TARGET);await load()}
 setInterval(sync,30*60*1000);setTimeout(sync,15000);
 async function wipe(){await load();for(const b of mine())await del(b.k);await load()}
@@ -8282,11 +8282,12 @@ window.ECO_W55.text=function(res){const L=EL7.map(k=>[k,100-((res||{})[k]||0)]);
 // ===== v56: economia — menos ouro por criatura e loot sem pilhas absurdas =====
 (function(){
 'use strict';
-const GOLD_MULT=0.3;   // o ouro das criaturas era ×10; agora fica ×3 (0,3 × 10)
+const GOLD_MULT=0.4;   // o ouro das criaturas era ×10; agora fica ×4 (0,4 × 10), caindo para ×2,5 no nível 3000
 const TASK_MULT=0.25,QUEST_MULT=0.35,BOSS_MULT=0.2;
 window.ECO_ECON={GOLD_MULT};
 // 1) ouro das criaturas
-try{const _km56=killMob;killMob=function(m){if(!m||!m.d||m.summon||!m.d.gold)return _km56.apply(this,arguments);const o=m.d;m.d=Object.assign({},o,{gold:Math.max(0,Math.round(o.gold*GOLD_MULT))});try{return _km56.apply(this,arguments)}finally{m.d=o}}}catch(e){}
+const gMult=L=>GOLD_MULT-0.15*Math.max(0,Math.min(1,((L||1)-500)/2500));window.ECO_ECON.gMult=gMult;
+try{const _km56=killMob;killMob=function(m){if(!m||!m.d||m.summon||!m.d.gold)return _km56.apply(this,arguments);const o=m.d;let L=1;try{L=(HUNTS[S.hunt]||{}).lvl||1}catch(e){}m.d=Object.assign({},o,{gold:Math.max(0,Math.round(o.gold*gMult(L)))});try{return _km56.apply(this,arguments)}finally{m.d=o}}}catch(e){}
 // 2) loot: quantidade máxima por item cresce devagar com o nível da hunt (antes chegava a milhares)
 function capN(id,h,lid,n){const base=((MOBS[id]&&MOBS[id].loot)||[]).find(l=>l[0]===lid);const b=Math.max(1,(base&&base[2])||1);const L=(h&&h.lvl)||1;
   return Math.max(1,Math.min(n,Math.round(b*(1+L/500)),Math.max(b,12)))}
@@ -8294,10 +8295,116 @@ try{const _sm56=scaledMob;scaledMob=function(id,h){const s=_sm56.apply(this,argu
   return Object.assign({},s,{loot:s.loot.map(([lid,ch,n])=>{const it=ITEMS[lid];if(!it||it.slot)return[lid,ch,n];return[lid,ch,capN(id,h,lid,n||1)]})})}}catch(e){}
 // 3) estimativa de ouro por criatura nas listas (huntEcon) com os valores novos
 try{huntEcon=function(h){const ms=h.mobs.map(id=>scaledMob(id,h)).filter(Boolean);if(!ms.length)return{xp:0,gp:0};const ev=m=>(m.loot||[]).reduce((s,[lid,ch,n])=>s+(ITEMS[lid]&&!ITEMS[lid].slot?ITEMS[lid].value*ch/100*(n||1):0),0);
-  return{xp:Math.round(ms.reduce((s,m)=>s+m.xp,0)/ms.length*stage(S?S.lvl:1)*10),gp:Math.round(ms.reduce((s,m)=>s+(m.gold||0)/2*10*GOLD_MULT+ev(m),0)/ms.length)}}}catch(e){}
+  return{xp:Math.round(ms.reduce((s,m)=>s+m.xp,0)/ms.length*stage(S?S.lvl:1)*10),gp:Math.round(ms.reduce((s,m)=>s+(m.gold||0)/2*10*gMult(h.lvl)+ev(m),0)/ms.length)}}}catch(e){}
 // 4) recompensas de task, missões e chefe global proporcionais
 try{const _tr56=taskReward;taskReward=function(){const r=_tr56.apply(this,arguments);if(r&&r.gold)r.gold=Math.round(r.gold*TASK_MULT);return r}}catch(e){}
 try{if(typeof QUESTS!=='undefined')for(const q of QUESTS)if(q.rw&&q.rw.gold&&!q._g56){q.rw.gold=Math.round(q.rw.gold*QUEST_MULT);q._g56=1}}catch(e){}
 try{const _br56=bossReward;bossReward=function(){const g0=S.gold;const r=_br56.apply(this,arguments);try{const d=S.gold-g0;if(d>0)S.gold=g0+Math.round(d*BOSS_MULT)}catch(e){}return r}}catch(e){}
+})();
+</script>
+<script id="eco57-js">
+// ===== v57: Market online entre jogadores (igual ao Tibia, por categorias) =====
+// Segurança: o servidor só aceita (1) criar oferta em seu nome, (2) comprar se ninguém comprou antes,
+// (3) o vendedor cancelar se ninguém comprou, (4) o vendedor receber uma única vez. Itens saem da mochila ANTES de anunciar.
+(function(){
+'use strict';
+const FEE=0.02,MAX_OFFERS=20,DAYS=30,MAX_PRICE=2e9;
+const now=()=>Date.now();
+const ON=()=>{try{return typeof netOn==='function'&&netOn()}catch(e){return false}};
+const GD=()=>{try{return typeof isGod==='function'&&isGod()}catch(e){return false}};
+const MK={list:null,t:0,busy:false,err:''};window.ECO_MK=MK;
+const css=document.createElement('style');css.textContent=`
+.mk57-cats{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;margin:6px 0 8px;padding-bottom:2px}.mk57-cats::-webkit-scrollbar{display:none}
+.mk57-cats button{flex:none}
+.mk57-row{display:grid;grid-template-columns:36px 1fr auto;gap:8px;align-items:center;padding:8px;border:1px solid #3d2f20;border-radius:10px;background:#1b140d;margin-bottom:6px}
+.mk57-row img{width:32px;height:32px;image-rendering:pixelated}
+.mk57-row b{display:block}.mk57-row small{color:#a99a83;font-size:.74rem}
+.mk57-price{text-align:right;white-space:nowrap}.mk57-price b{color:#e6c46b}
+.mk57-sell{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}.mk57-sell input{width:100%}
+.mk57-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}`;document.head.appendChild(css);
+
+// ---------- categorias ----------
+const CATS=[['todas','Todas'],['espada','Espadas'],['arco','Arcos'],['cajado','Cajados'],['varinha','Varinhas'],['manoplas','Punhos'],['elmo','Elmos'],['armadura','Armaduras'],['calca','Calças'],['botas','Botas'],['escudo','Escudos'],['amuleto','Amuletos'],['anel','Anéis'],['mochila','Mochilas'],['municao','Munição'],['gema','Gemas e tesouros'],['trofeu','Troféus'],['produto','Produtos de criatura'],['outros','Outros']];
+function catOf(id){const it=ITEMS[id];if(!it)return'outros';if(it.slot==='arma')return it.wtype||'outros';if(it.slot)return it.slot;if(it.amm)return'municao';
+  if(/^trofeu/.test(id))return'trofeu';if(/gema|joia|bolsa_gema|cristal|perola|ouro|diamante|rubi|safira|esmeralda/.test(id+' '+(it.icon||''))||it.rar==='raro'||it.rar==='epico'||it.rar==='mistico')return'gema';if(it.good||it.value)return'produto';return'outros'}
+const tradeable=id=>{const it=ITEMS[id];return !!it&&!it.inf&&!/^pot_/.test(id)&&id!=='gold'};
+window.ECO_MK.catOf=catOf;
+
+// ---------- servidor ----------
+async function load(force){if(!ON())return;if(MK.busy)return;if(!force&&MK.list&&now()-MK.t<20000)return;MK.busy=true;
+  try{const r=await fetch(netURL('market'));const j=await r.json();if(j&&j.error)throw new Error(j.error);MK.list=Object.entries(j||{}).map(([id,v])=>({id,...v}));MK.t=now();MK.err=''}
+  catch(e){MK.err=String(e.message||e)}finally{MK.busy=false}if(UI.sheet==='market57')renderSheet()}
+const active=o=>!o.b&&o.t&&now()-o.t<DAYS*864e5;
+const mine=()=>(MK.list||[]).filter(o=>o.s===NET.uid);
+
+// ---------- vender ----------
+async function sell(id,q,p){if(!ON())return toast('O Market só funciona online.');if(!tradeable(id))return toast('Este item não pode ser vendido no Market.');
+  q=Math.floor(+q);p=Math.floor(+p);if(!(q>=1))return toast('Quantidade inválida.');if(!(p>=1)||p*q>MAX_PRICE)return toast('Preço inválido.');
+  if((S.bag[id]||0)<q)return toast('Você não tem essa quantidade na mochila.');
+  await load(true);if(mine().filter(active).length>=MAX_OFFERS)return toast(`Máximo de ${MAX_OFFERS} ofertas ao mesmo tempo.`);
+  // tira da mochila antes de anunciar (se falhar, devolve)
+  S.bag[id]-=q;if(S.bag[id]<=0)delete S.bag[id];save();
+  const body={s:NET.uid,sn:String(S.nome).slice(0,20),it:id,q,p,cat:catOf(id),t:{'.sv':'timestamp'}};
+  try{const r=await fetch(netURL('market'),{method:'POST',body:JSON.stringify(body)});if(!r.ok)throw new Error('HTTP '+r.status);
+    toast(`Oferta criada: ${q}× ${ITEMS[id].nome} por ${fmtK(p)} gp cada.`);msg(`Market: você anunciou ${q}× ${ITEMS[id].nome}.`,'c-sys');await load(true)}
+  catch(e){S.bag[id]=(S.bag[id]||0)+q;save();toast('Não consegui anunciar. O item voltou para a mochila.')}renderSheet()}
+// ---------- comprar ----------
+async function buy(oid){if(!ON())return toast('O Market só funciona online.');const o=(MK.list||[]).find(x=>x.id===oid);if(!o||!active(o))return toast('Oferta não está mais disponível.');
+  if(o.s===NET.uid)return toast('Essa oferta é sua.');const total=o.p*o.q;if(S.gold<total)return toast(`Você precisa de ${fmtK(total)} gp na mochila.`);
+  if(UI.mkAsk!==oid){UI.mkAsk=oid;renderSheet();return toast(`Toque de novo para comprar por ${fmtK(total)} gp.`)}UI.mkAsk=null;
+  const nw={s:o.s,sn:o.sn,it:o.it,q:o.q,p:o.p,cat:o.cat,t:o.t,b:NET.uid,bn:String(S.nome).slice(0,20),bt:{'.sv':'timestamp'}};
+  try{const r=await fetch(netURL('market/'+oid),{method:'PUT',body:JSON.stringify(nw)});if(!r.ok)throw new Error(r.status===401||r.status===403?'vendido':'HTTP '+r.status);
+    S.gold-=total;S.bag[o.it]=(S.bag[o.it]||0)+o.q;save();hud();toast(`Comprado: ${o.q}× ${ITEMS[o.it].nome}!`);msg(`Market: você comprou ${o.q}× ${ITEMS[o.it].nome} de ${o.sn} por ${fmtK(total)} gp.`,'c-loot');
+    hist({tp:'compra',it:o.it,q:o.q,p:o.p,w:o.sn})}
+  catch(e){toast(e.message==='vendido'?'Alguém comprou antes de você.':'Não consegui comprar agora.')}await load(true)}
+// ---------- cancelar ----------
+async function cancel(oid){const o=(MK.list||[]).find(x=>x.id===oid);if(!o||o.s!==NET.uid||o.b)return;
+  try{const r=await fetch(netURL('market/'+oid),{method:'DELETE'});if(!r.ok)throw new Error();S.bag[o.it]=(S.bag[o.it]||0)+o.q;save();toast('Oferta cancelada. O item voltou para a mochila.')}catch(e){toast('Não consegui cancelar (talvez já tenha sido vendido).')}await load(true)}
+// ---------- receber vendas ----------
+let collecting=false;
+async function collect(){if(collecting||!ON()||!S)return;collecting=true;try{await load(true);for(const o of mine()){if(!o.b||o.c)continue;
+  const nw=Object.assign({},o,{c:true});delete nw.id;try{const r=await fetch(netURL('market/'+o.id),{method:'PUT',body:JSON.stringify(nw)});if(!r.ok)continue;
+    const total=o.p*o.q,net=Math.floor(total*(1-FEE));S.gold+=net;save();hud();msg(`Market: ${o.bn||'alguém'} comprou ${o.q}× ${(ITEMS[o.it]||{}).nome||o.it}. Você recebeu ${fmtK(net)} gp (taxa de ${Math.round(FEE*100)}%).`,'c-loot');toast(`Venda no Market: +${fmtK(net)} gp`);
+    hist({tp:'venda',it:o.it,q:o.q,p:o.p,w:o.bn});try{await fetch(netURL('market/'+o.id),{method:'DELETE'})}catch(e){}}catch(e){}}}finally{collecting=false}}
+setTimeout(collect,12000);setInterval(collect,60000);MK.collect=collect;MK.load=load;
+// devolve ofertas vencidas (30 dias)
+setInterval(async()=>{try{if(!ON()||!MK.list)return;for(const o of mine())if(!o.b&&o.t&&now()-o.t>=DAYS*864e5)await cancel(o.id)}catch(e){}},300000);
+function hist(h){try{S.mkh=S.mkh||[];S.mkh.unshift(Object.assign({d:now()},h));S.mkh=S.mkh.slice(0,40);save()}catch(e){}}
+
+// ---------- tela ----------
+const ICO=id=>{try{return itemIcon(id)}catch(e){return''}};
+const avgPrice=id=>{const L=(MK.list||[]).filter(o=>o.it===id&&active(o)).map(o=>o.p).sort((a,b)=>a-b);return L.length?L[0]:0};
+SHEETS.market57=function(){if(!MK.list&&ON())load();const tab=UI.mkTab||'comprar',cat=UI.mkCat||'todas',q=String(UI.mkQ||'').toLowerCase();
+  const T=(k,n)=>`<button class="btn sm ${tab===k?'pri':''}" data-a="mk57tab" data-v="${k}">${n}</button>`;
+  let body=`<div class="mk57-tabs">${T('comprar','Comprar')}${T('vender','Vender')}${T('minhas','Minhas ofertas'+(mine().filter(active).length?` (${mine().filter(active).length})`:''))}${T('historico','Histórico')}</div>`;
+  if(!ON())return['Market',body+'<p class="muted">O Market funciona no modo online. Entre com sua conta para comprar e vender.</p>'];
+  if(MK.err)body+=`<p class="bad">Não carregou: ${esc(MK.err)}</p>`;
+  const cats=`<div class="mk57-cats">${CATS.map(([k,n])=>`<button class="btn sm ${cat===k?'pri':''}" data-a="mk57cat" data-v="${k}">${n}</button>`).join('')}</div>`;
+  if(tab==='comprar'){let L=(MK.list||[]).filter(o=>active(o)&&ITEMS[o.it]&&(cat==='todas'||o.cat===cat)&&(!q||ITEMS[o.it].nome.toLowerCase().includes(q)));
+    const so=UI.mkSort||'barato';L.sort(so==='barato'?(a,b)=>a.p-b.p:so==='caro'?(a,b)=>b.p-a.p:(a,b)=>(b.t||0)-(a.t||0));
+    body+=`${cats}<div class="row" style="gap:6px;margin-bottom:8px;flex-wrap:nowrap"><input class="txt" id="mk57q" placeholder="Buscar item" value="${esc(UI.mkQ||'')}" style="flex:1"><select class="txt" id="mk57s"><option value="barato" ${so==='barato'?'selected':''}>Mais barato</option><option value="caro" ${so==='caro'?'selected':''}>Mais caro</option><option value="novo" ${so==='novo'?'selected':''}>Mais novo</option></select></div>
+      ${MK.list?'':'<p class="muted">Carregando ofertas…</p>'}${L.slice(0,80).map(o=>{const it=ITEMS[o.it],tot=o.p*o.q,me=o.s===NET.uid;return`<div class="mk57-row"><img src="${ICO(o.it)}" alt=""><div><b>${o.q>1?o.q+'× ':''}${esc(it.nome)}</b><small>${esc(o.sn||'?')} · ${statLineSafe(it)}</small></div><div class="mk57-price"><b>${fmtK(o.p)}</b> <small>gp ${o.q>1?'cada':''}</small><br>${me?'<small>sua oferta</small>':`<button class="btn sm ${UI.mkAsk===o.id?'red':'pri'}" data-a="mk57buy" data-v="${o.id}">${UI.mkAsk===o.id?'Confirmar '+fmtK(tot):'Comprar'}</button>`}</div></div>`}).join('')||(MK.list?'<p class="muted">Nenhuma oferta nessa categoria.</p>':'')}`}
+  else if(tab==='vender'){const items=Object.keys(S.bag||{}).filter(id=>S.bag[id]>0&&tradeable(id)&&(cat==='todas'||catOf(id)===cat)).sort((a,b)=>ITEMS[a].nome.localeCompare(ITEMS[b].nome));const sel=UI.mkSel&&S.bag[UI.mkSel]?UI.mkSel:null;
+    body+=`<p class="muted" style="margin:0 0 6px;font-size:.84rem">Escolha um item da mochila. Ele sai da mochila e volta se você cancelar. Taxa de ${Math.round(FEE*100)}% só quando vender. Ofertas duram ${DAYS} dias.</p>${cats}`;
+    if(sel){const it=ITEMS[sel],ref=avgPrice(sel);body+=`<div class="li" style="display:block;margin-bottom:8px;border-color:#7a5c22"><div class="row" style="gap:8px;align-items:center"><img src="${ICO(sel)}" style="width:32px;height:32px;image-rendering:pixelated"><b>${esc(it.nome)}</b><small class="muted">você tem ${S.bag[sel]}</small></div>
+      <div class="mk57-sell"><label class="muted" style="font-size:.78rem">Quantidade<input class="txt" id="mk57n" type="number" min="1" max="${S.bag[sel]}" value="${Math.min(S.bag[sel],+UI.mkN||1)}"></label><label class="muted" style="font-size:.78rem">Preço por unidade (gp)<input class="txt" id="mk57p" type="number" min="1" value="${+UI.mkP||ref||Math.max(1,it.value||1)}"></label></div>
+      <small class="muted">${ref?`Oferta mais barata agora: ${fmtK(ref)} gp. `:''}Valor no NPC: ${fmtK(it.value||0)} gp.</small><div class="row" style="margin-top:8px"><button class="btn pri" data-a="mk57sell">Anunciar</button><button class="btn" data-a="mk57pick" data-v="">Cancelar</button></div></div>`}
+    body+=items.map(id=>`<div class="mk57-row"><img src="${ICO(id)}" alt=""><div><b>${esc(ITEMS[id].nome)}</b><small>${S.bag[id]} na mochila · ${statLineSafe(ITEMS[id])}</small></div><button class="btn sm" data-a="mk57pick" data-v="${id}">Vender</button></div>`).join('')||'<p class="muted">Nenhum item da mochila nessa categoria.</p>'}
+  else if(tab==='minhas'){const L=mine().sort((a,b)=>(b.t||0)-(a.t||0));
+    body+=L.map(o=>{const it=ITEMS[o.it]||{nome:o.it};const st=o.b?(o.c?'recebido':'vendido · recebendo…'):active(o)?`vence em ${Math.max(0,Math.ceil((o.t+DAYS*864e5-now())/864e5))} dias`:'vencida';
+      return`<div class="mk57-row"><img src="${ICO(o.it)}" alt=""><div><b>${o.q>1?o.q+'× ':''}${esc(it.nome)}</b><small>${fmtK(o.p)} gp cada · ${st}</small></div>${!o.b?`<button class="btn sm" data-a="mk57cancel" data-v="${o.id}">Cancelar</button>`:''}</div>`}).join('')||'<p class="muted">Você não tem ofertas.</p>'}
+  else if(tab==='historico'){body+=(S.mkh||[]).map(h=>`<div class="mk57-row"><img src="${ICO(h.it)}" alt=""><div><b>${h.tp==='compra'?'Comprou':'Vendeu'} ${h.q}× ${esc((ITEMS[h.it]||{}).nome||h.it)}</b><small>${h.tp==='compra'?'de':'para'} ${esc(h.w||'?')} · ${new Date(h.d).toLocaleString('pt-BR')}</small></div><div class="mk57-price"><b>${fmtK(h.p*h.q)}</b> <small>gp</small></div></div>`).join('')||'<p class="muted">Nada ainda.</p>'}
+  if(GD())body+=`<p class="muted" style="font-size:.75rem;margin-top:10px">GOD: ${(MK.list||[]).length} registros no Market.</p>`;
+  return['Market',body]};
+function statLineSafe(it){try{return String(statLine(it,0)).replace(/<[^>]+>/g,'')}catch(e){return''}}
+ACT.mk57tab=v=>{UI.mkTab=v;UI.mkAsk=null;if(v!=='historico')load(true);renderSheet()};
+ACT.mk57cat=v=>{UI.mkCat=v;renderSheet()};
+ACT.mk57pick=v=>{UI.mkSel=v||null;UI.mkN=1;UI.mkP=0;renderSheet()};
+ACT.mk57buy=v=>buy(v);ACT.mk57cancel=v=>cancel(v);
+ACT.mk57sell=()=>{const id=UI.mkSel;const n=(document.getElementById('mk57n')||{}).value,p=(document.getElementById('mk57p')||{}).value;UI.mkSel=null;sell(id,n,p)};
+document.addEventListener('input',e=>{if(e.target&&e.target.id==='mk57q'){UI.mkQ=e.target.value;clearTimeout(window.__mkq);window.__mkq=setTimeout(()=>{const pos=e.target.selectionStart;renderSheet();const el=document.getElementById('mk57q');if(el){el.focus();try{el.setSelectionRange(pos,pos)}catch(x){}}},350)}});
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='mk57s'){UI.mkSort=e.target.value;renderSheet()}});
+// botão no menu
+try{const _mn57=SHEETS.menu;SHEETS.menu=function(){const r=_mn57.apply(this,arguments);try{r[1]=r[1].replace('<h3>Atividades</h3><div class="menu-sec">',`<h3>Atividades</h3><div class="menu-sec"><button class="mi" data-a="open" data-v="market57"><img src="${icon('moeda')}" alt="">Market</button>`)}catch(e){}return r}}catch(e){}
 })();
 </script>
