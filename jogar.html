@@ -7977,3 +7977,231 @@ try{
 }catch(e){console.warn('eco52 god',e)}
 })();
 </script>
+<script id="eco53-js">
+// ===== v53: ranking certo (todas as skills, sem o GOD) e guildas completas =====
+(function(){
+'use strict';
+const GODN=/^char\s*god/i;
+const DBU=()=>{try{return String(((window.ECO_CONFIG||{}).online||{}).databaseURL||'').replace(/\/$/,'')}catch(e){return''}};
+const ON=()=>{try{return typeof netOn==='function'&&netOn()}catch(e){return false}};
+const GD=()=>{try{return typeof isGod==='function'&&isGod()}catch(e){return false}};
+const now=()=>Date.now();
+const css=document.createElement('style');css.textContent=`
+.g53-head{display:flex;gap:12px;align-items:center;margin-bottom:8px}.g53-emb{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;font:800 1.5rem/1 serif;background:linear-gradient(135deg,#3a2b12,#1b140d);border:1px solid #7a5c22;color:#e6c46b;flex:none}
+.g53-bar{height:8px;border-radius:99px;background:#2a2016;overflow:hidden;margin:4px 0}.g53-bar i{display:block;height:100%;background:linear-gradient(90deg,#b98b33,#e6c46b)}
+.g53-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}.g53-kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;margin:6px 0 10px}
+.g53-kpi div{background:#1b140d;border:1px solid #3d2f20;border-radius:10px;padding:7px 9px}.g53-kpi b{display:block;color:#e6c46b;font-size:1.05rem}.g53-kpi small{color:#a99a83;font-size:.7rem}
+.g53-on{display:inline-block;width:7px;height:7px;border-radius:50%;background:#2ecc40;margin-right:4px}.g53-off{display:inline-block;width:7px;height:7px;border-radius:50%;background:#555;margin-right:4px}`;
+document.head.appendChild(css);
+
+// =====================================================================
+// 1. RANKING: carrega pelo level e ordena aqui (as outras skills não têm índice no servidor)
+// =====================================================================
+let godUids=new Set();
+function cleanRank(list){
+  for(const x of list)if(GODN.test(x.n||'')&&x.b!==1)godUids.add(String(x.u).split('_')[0]);
+  try{if(GD()&&NET.uid)godUids.add(NET.uid)}catch(e){}
+  return list.filter(x=>x.b===1||!(GODN.test(x.n||'')||godUids.has(String(x.u).split('_')[0])))}
+window.ECO_cleanRank=cleanRank;
+try{
+  netLoadRank=async function(){if(!ON())return;const sort=RANK_STATS[UI.rankSort]?UI.rankSort:'l';NET.rank={t:now(),list:(NET.rank&&NET.rank.list)||[],sort};
+    try{const r=await fetch(netURL('rank','orderBy=%22l%22&limitToLast=1000'));const j=await r.json();if(j&&j.error){NET.err='Highscores: '+j.error;return}
+      const seen=new Set();let L=Object.entries(j||{}).map(([u,v])=>({u,...v}));
+      if(typeof window.ECO_TBLIVE==='function')L=L.map(x=>x.b===1?window.ECO_TBLIVE(Object.assign({k:x.u},x)):x);
+      L=cleanRank(L).sort((a,b)=>((+b[sort]||-1)-(+a[sort]||-1))||((+b.l||0)-(+a.l||0))).filter(x=>{const k=rankNorm42(x.n);if(!k||seen.has(k))return false;seen.add(k);return true}).slice(0,200);
+      NET.rank.list=L;NET.err='';if(UI.sheet==='online'&&UI.sub==='rank')renderSheet()}catch(e){NET.err='Não foi possível carregar os Highscores.'}};
+}catch(e){console.warn('eco53 rank',e)}
+// o CHAR GOD não grava no ranking e apaga o que já tinha
+try{const _nr53=netRank;netRank=function(){if(GD())return;return _nr53.apply(this,arguments)}}catch(e){}
+let godClean=false;
+setInterval(async()=>{if(godClean||!GD()||!ON()||!NET.uid)return;godClean=true;try{const j=await (await fetch(netURL('rank','orderBy=%22$key%22&startAt=%22'+NET.uid+'%22&endAt=%22'+NET.uid+'%22'))).json();
+  for(const k in (j||{}))if(!(j[k]&&j[k].b===1)&&!/_tb\d+$/.test(k))await fetch(netURL('rank/'+k),{method:'DELETE'})}catch(e){godClean=false}},15000);
+
+// =====================================================================
+// 2. GUILDAS: nível, bônus, meta semanal, recrutamento, pedidos, ranking de guildas
+// =====================================================================
+const week=()=>{const d=new Date();const t=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());const day=(new Date(t).getUTCDay()+6)%7;return Math.floor((t-day*864e5)/(7*864e5))};
+const gLvl=p=>Math.min(50,Math.floor(Math.sqrt(Math.max(0,p)/200))+1);
+const gNeed=l=>200*l*l;
+const gBonus=l=>Math.min(15,l-1);// % de XP
+const ME={gx:0,wk:0,w:week(),dirty:false,sent:0};
+function memInfo(){const M=Object.values(GUILD.members||{}).filter(m=>m.r!=='Pendente');const pts=M.reduce((s,m)=>s+(+m.gx||0),0);const w=week();const wk=M.reduce((s,m)=>s+(m.w===w?(+m.wk||0):0),0);
+  const lv=gLvl(pts);return{M,pts,lv,wk,goal:Math.max(1500,M.length*1200),bonus:gBonus(lv)}}
+function myMember(){try{return GUILD.members&&GUILD.members[NET.uid]}catch(e){return null}}
+function syncLocal(){const m=myMember();if(!m)return;if((+m.gx||0)>ME.gx)ME.gx=+m.gx||0;if(m.w===week()&&(+m.wk||0)>ME.wk)ME.wk=+m.wk||0;if(ME.w!==week()){ME.w=week();ME.wk=0}}
+// conta as criaturas mortas pela guilda
+try{const _km53=killMob;killMob=function(m){const alive=Wd&&Wd.mobs&&Wd.mobs.includes(m);const r=_km53.apply(this,arguments);
+  try{if(alive&&GUILD.gid&&m&&m.id!=='boneco'&&!m.summon){const p=m.d&&m.d.boss?40:1;syncLocal();ME.gx+=p;ME.wk+=1;ME.dirty=true}}catch(e){}return r}}catch(e){}
+setInterval(async()=>{try{if(!ME.dirty||!GUILD.gid||!ON()||now()-ME.sent<90000)return;const m=myMember();if(!m||m.r==='Pendente')return;ME.dirty=false;ME.sent=now();
+  const o={...m,n:String(S.nome).slice(0,20),l:S.lvl,v:S.voc,gx:ME.gx,w:ME.w,wk:ME.wk,ls:{'.sv':'timestamp'}};await netPut(`gmembers/${GUILD.gid}/${NET.uid}`,o);GUILD.members[NET.uid]=Object.assign({},o,{ls:now()})}catch(e){}},20000);
+// "visto por último": atualiza a cada 5 min
+setInterval(async()=>{try{if(!GUILD.gid||!ON())return;const m=myMember();if(!m||m.r==='Pendente')return;await netPut(`gmembers/${GUILD.gid}/${NET.uid}/ls`,{'.sv':'timestamp'})}catch(e){}},300000);
+// bônus de XP da guilda
+try{const _ge53=gainExp;gainExp=function(x){try{if(x>0&&GUILD.gid&&myMember()&&myMember().r!=='Pendente'){const b=memInfo().bonus;if(b>0)x=Math.round(x*(1+b/100))}}catch(e){}return _ge53.call(this,x)}}catch(e){}
+
+// entrar: guilda fechada vira pedido
+try{const _gj53=ACT.gjoin;ACT.gjoin=async gid=>{const g=(GUILD.list||[]).find(x=>x.id===gid);if(!g||!g.fechada)return _gj53(gid);
+  if(GUILD.gid)return toast('Saia da sua guilda antes.');try{await netPut(`gmembers/${gid}/${NET.uid}`,{n:String(S.nome).slice(0,20),l:S.lvl,v:S.voc,r:'Pendente',t:{'.sv':'timestamp'}});await netPut('pguild/'+NET.uid,gid);await gLoadMine();toast('Pedido enviado. Espere o líder aceitar.');renderSheet()}catch(e){toast('Erro: '+e.message)}}}catch(e){}
+const isLead=()=>GUILD.owner===NET.uid;
+ACT.gacc53=async u=>{if(!isLead())return;const m=GUILD.members[u];if(!m)return;await netPut(`gmembers/${GUILD.gid}/${u}`,{...m,r:'Membro'});await gLoadMine();toast(m.n+' entrou na guilda.');renderSheet()};
+ACT.grej53=async u=>{if(!isLead())return;await fetch(netURL(`gmembers/${GUILD.gid}/${u}`),{method:'DELETE'});await gLoadMine();renderSheet()};
+ACT.gopen53=async()=>{if(!isLead())return;const f=!(GUILD.meta&&GUILD.meta.fechada);await netPut(`guilds/${GUILD.gid}/fechada`,f);await gLoadMine();toast(f?'Guilda fechada: entrada só com aprovação.':'Guilda aberta: qualquer um entra.');renderSheet()};
+ACT.gemb53=async v=>{if(!isLead())return;await netPut(`guilds/${GUILD.gid}/emb`,String(v).slice(0,4));await gLoadMine();renderSheet()};
+ACT.gdesc53=async()=>{if(!isLead())return;const el=document.getElementById('gdesc53'),t=(el&&el.value||'').trim().slice(0,200);await netPut(`guilds/${GUILD.gid}/d`,t);await gLoadMine();toast('Descrição salva.');renderSheet()};
+ACT.gtab53=v=>{UI.gtab53=v;if(v==='ranking')gRankLoad();renderSheet()};
+ACT.gclaim53=()=>{const i=memInfo(),w=week();S.gclaim=S.gclaim||{};if(S.gclaim[w])return toast('Você já pegou o prêmio desta semana.');if(i.wk<i.goal)return toast('A meta ainda não foi batida.');
+  S.gclaim[w]=1;const g=20000+i.lv*5000;S.gold+=g;S.xpBoost=(S.xpBoost||0)+3600;save();hud();toast(`Prêmio da guilda: ${fmtK(g)} gp e 1h de XP em dobro!`);try{msg(`Meta semanal da guilda batida! +${fmtK(g)} gp e 1h de XP 2x.`,'c-lv')}catch(e){}renderSheet()};
+// ranking de guildas
+const GR={list:null,t:0};
+async function gRankLoad(){if(GR.list&&now()-GR.t<60000)return;try{const [g,m]=await Promise.all([fetch(DBU()+'/guilds.json').then(r=>r.json()),fetch(DBU()+'/gmembers.json').then(r=>r.json())]);
+  GR.list=Object.entries(g||{}).map(([id,x])=>{const M=Object.values((m||{})[id]||{}).filter(a=>a.r!=='Pendente');const pts=M.reduce((s,a)=>s+(+a.gx||0),0);return{id,n:x.n,emb:x.emb||'',lv:gLvl(pts),pts,mem:M.length,avg:M.length?Math.round(M.reduce((s,a)=>s+(+a.l||0),0)/M.length):0}}).filter(x=>x.mem).sort((a,b)=>b.pts-a.pts||b.mem-a.mem);GR.t=now();
+  if(UI.sheet==='guilda')renderSheet()}catch(e){GR.list=[]}}
+const EMBS=['⚔','🛡','🐉','🔥','❄','🌙','☠','👑','🦅','🐺','🌿','⚡'];
+const ago=t=>{if(!t)return'—';const m=Math.round((now()-t)/60000);return m<5?'online':m<60?`há ${m} min`:m<1440?`há ${Math.round(m/60)} h`:`há ${Math.round(m/1440)} dias`};
+try{
+  const _gs53=SHEETS.guilda;
+  SHEETS.guilda=function(){
+    if(!GUILD.gid){const r=_gs53.apply(this,arguments);if(!GR.list)gRankLoad();
+      const L=(GUILD.list||[]).map(g=>{const k=(GR.list||[]).find(x=>x.id===g.id)||{};return{...g,...k}});
+      const tbl=L.length?`<h3>Guildas do servidor</h3><div class="list">${L.sort((a,b)=>(b.pts||0)-(a.pts||0)).map(g=>`<div class="li"><div class="g53-emb" style="width:38px;height:38px;font-size:1.1rem">${esc(g.emb||'🛡')}</div><div class="t"><b>${esc(g.n)}</b><small>Nível ${g.lv||1} · ${g.mem||0} membros · nível médio ${g.avg||0} · ${g.fechada?'entrada com aprovação':'aberta'}${g.d?' · '+esc(g.d):''}</small></div><button class="btn sm pri" data-a="gjoin" data-v="${g.id}">${g.fechada?'Pedir para entrar':'Entrar'}</button></div>`).join('')}</div>`:`<h3>Guildas do servidor</h3><p class="muted">${GUILD.list?'Nenhuma guilda ainda. Crie a primeira!':'Carregando guildas…'}</p>`;
+      r[1]=r[1].replace(/<h3>Guildas[^<]*<\/h3>[\s\S]*$/,'')+tbl;return r}
+    const me=myMember()||{};
+    if(me.r==='Pendente')return['Guilda',`<div class="g53-head"><div class="g53-emb">⏳</div><div><h3 style="margin:0">${esc(GUILD.name)}</h3><small class="muted">Seu pedido está esperando o líder aceitar.</small></div></div><button class="btn sm" data-a="gleave">Cancelar pedido</button>`];
+    syncLocal();const i=memInfo(),gd=GUILD.meta||{},tab=UI.gtab53||'geral',lead=isLead();
+    const prog=Math.min(100,Math.round((i.pts-gNeed(i.lv-1>0?i.lv-1:0))/(gNeed(i.lv)-gNeed(i.lv-1>0?i.lv-1:0)||1)*100));
+    const T=(k,n)=>`<button class="btn sm ${tab===k?'pri':''}" data-a="gtab53" data-v="${k}">${n}</button>`;
+    const pend=Object.entries(GUILD.members||{}).filter(([,m])=>m.r==='Pendente');
+    let body=`<div class="g53-head"><div class="g53-emb">${esc(gd.emb||'🛡')}</div><div style="flex:1;min-width:0"><h3 style="margin:0">${esc(GUILD.name)}</h3><small class="muted">Nível ${i.lv} · ${i.M.length} membros · bônus de <b class="gold">+${i.bonus}% XP</b> para todos</small><div class="g53-bar"><i style="width:${i.lv>=50?100:Math.max(2,prog)}%"></i></div><small class="muted">${i.lv>=50?'Nível máximo':`${fmtK(i.pts)} / ${fmtK(gNeed(i.lv))} pontos para o nível ${i.lv+1}`}</small></div></div>
+      ${gd.motd?`<div class="li" style="display:block;margin-bottom:8px"><small class="muted">Aviso do líder</small><div>${esc(gd.motd)}</div></div>`:''}
+      <div class="g53-tabs">${T('geral','Geral')}${T('membros','Membros')}${T('chat','Chat')}${T('ranking','Ranking')}${lead?T('admin','Administração'+(pend.length?` (${pend.length})`:'')):''}</div>`;
+    if(tab==='geral'){const w=week(),done=i.wk>=i.goal,claimed=S.gclaim&&S.gclaim[w];const top=i.M.slice().sort((a,b)=>(b.w===w?b.wk||0:0)-(a.w===w?a.wk||0:0)).slice(0,5);
+      body+=`<div class="g53-kpi"><div><b>${i.lv}</b><small>nível da guilda</small></div><div><b>+${i.bonus}%</b><small>XP para membros</small></div><div><b>${i.M.filter(m=>m.ls&&now()-m.ls<10*60000).length}</b><small>membros online</small></div><div><b>${fmtK(i.pts)}</b><small>pontos totais</small></div></div>
+        <h3>Meta da semana</h3><p class="muted" style="margin:0 0 4px;font-size:.85rem">Matem ${fmtK(i.goal)} criaturas juntos até domingo. Cada membro ganha ${fmtK(20000+i.lv*5000)} gp e 1h de XP em dobro.</p>
+        <div class="g53-bar" style="height:12px"><i style="width:${Math.min(100,Math.round(i.wk/i.goal*100))}%"></i></div><small class="muted">${fmtK(i.wk)} / ${fmtK(i.goal)}</small>
+        <div class="row" style="margin:8px 0"><button class="btn sm ${done&&!claimed?'pri':''}" data-a="gclaim53" ${done&&!claimed?'':'disabled'}>${claimed?'Prêmio pego ✓':done?'Pegar prêmio':'Meta em andamento'}</button></div>
+        <h3>Quem mais caçou na semana</h3><div class="list">${top.map((m,k)=>`<div class="li"><div class="t"><b>${k+1}º ${esc(m.n)}</b><small>${fmtK(m.w===w?m.wk||0:0)} criaturas</small></div></div>`).join('')||'<p class="muted">Ninguém caçou ainda.</p>'}</div>
+        <p class="muted" style="font-size:.8rem;margin-top:8px">A guilda sobe de nível com as criaturas que os membros matam (boss vale 40). Cada nível dá +1% de XP para todos, até +15%.</p>
+        <div class="row" style="margin-top:8px"><button class="btn sm" data-a="gleave">Sair da guilda</button></div>`}
+    else if(tab==='membros'){const order={'Líder':0,'Vice-líder':1,'Membro':2};const M=Object.entries(GUILD.members||{}).filter(([,m])=>m.r!=='Pendente').sort((a,b)=>(order[a[1].r]??3)-(order[b[1].r]??3)||(b[1].l||0)-(a[1].l||0));
+      body+=`<div class="list">${M.map(([u,m])=>{const on=m.ls&&now()-m.ls<10*60000;return`<div class="li"><div class="t"><b><span class="${on?'g53-on':'g53-off'}"></span>${esc(m.n)}</b><small>${esc(m.r||'Membro')} · nível ${m.l} · ${VOC[m.v]?VOC[m.v].nome:''} · ${fmtK(m.gx||0)} pts · ${on?'online':ago(m.ls||m.t)}</small></div>${lead&&u!==NET.uid?`<div class="row"><button class="btn sm" data-a="gpromote" data-v="${u}">${m.r==='Vice-líder'?'Rebaixar':'Promover'}</button><button class="btn sm" data-a="gkick" data-v="${u}">Expulsar</button></div>`:''}</div>`}).join('')}</div>`}
+    else if(tab==='chat'){body+=`<div class="list eco44-gchat">${(GUILD.chat||[]).slice(-40).map(m=>`<div><b>${esc(m.n)}:</b> ${esc(m.m)}</div>`).join('')||'<span class="muted">Sem mensagens.</span>'}</div><form id="gform" class="row"><input class="txt" id="gin" maxlength="140" placeholder="Mensagem para a guilda" style="flex:1"><button class="btn pri">Enviar</button></form>`}
+    else if(tab==='ranking'){const L=GR.list;body+=L?`<div class="list">${L.map((g,k)=>`<div class="li" style="${g.id===GUILD.gid?'border-color:#e6c46b':''}"><div class="g53-emb" style="width:34px;height:34px;font-size:1rem">${esc(g.emb||'🛡')}</div><div class="t"><b>${k+1}º ${esc(g.n)}</b><small>Nível ${g.lv} · ${g.mem} membros · nível médio ${g.avg}</small></div></div>`).join('')}</div>`:'<p class="muted">Carregando…</p>'}
+    else if(tab==='admin'&&lead){body+=`${pend.length?`<h3>Pedidos para entrar</h3><div class="list">${pend.map(([u,m])=>`<div class="li"><div class="t"><b>${esc(m.n)}</b><small>nível ${m.l} · ${VOC[m.v]?VOC[m.v].nome:''}</small></div><div class="row"><button class="btn sm pri" data-a="gacc53" data-v="${u}">Aceitar</button><button class="btn sm" data-a="grej53" data-v="${u}">Recusar</button></div></div>`).join('')}</div>`:''}
+        <h3>Recrutamento</h3><div class="row" style="margin-bottom:8px"><button class="btn sm ${gd.fechada?'':'pri'}" data-a="gopen53">${gd.fechada?'Fechada: só com aprovação':'Aberta: qualquer um entra'}</button></div>
+        <h3>Emblema</h3><div class="row" style="gap:4px;flex-wrap:wrap;margin-bottom:8px">${EMBS.map(e=>`<button class="btn sm ${gd.emb===e?'pri':''}" data-a="gemb53" data-v="${e}">${e}</button>`).join('')}</div>
+        <h3>Descrição (aparece na lista de guildas)</h3><textarea class="txt" id="gdesc53" maxlength="200" style="width:100%">${esc(gd.d||'')}</textarea><button class="btn sm" data-a="gdesc53">Salvar descrição</button>
+        <h3>Aviso para os membros</h3><textarea class="txt" id="gmotd" maxlength="180" style="width:100%">${esc(gd.motd||'')}</textarea><button class="btn sm" data-a="gmotd">Salvar aviso</button>`}
+    return['Guilda',body]};
+}catch(e){console.warn('eco53 guilda',e)}
+})();
+</script>
+<script id="eco54-js">
+// ===== v54: sede da guilda, Guerra pelo Castelo (1x por semana) e Castelo com hunt exclusiva =====
+(function(){
+'use strict';
+const now=()=>Date.now();
+const DBU=()=>{try{return String(((window.ECO_CONFIG||{}).online||{}).databaseURL||'').replace(/\/$/,'')}catch(e){return''}};
+const ON=()=>{try{return typeof netOn==='function'&&netOn()}catch(e){return false}};
+const AG=window.ECO_AGENDA||{};if(AG.warD==null)AG.warD='Sat';if(AG.warH==null)AG.warH=21;if(AG.warMin==null)AG.warMin=30;if(AG.castXp==null)AG.castXp=15;
+const BR=t=>{try{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',weekday:'short',hour12:false}).formatToParts(new Date(t));const o={};for(const x of p)o[x.type]=x.value;return{h:+o.hour%24,m:+o.minute,wd:o.weekday,y:+o.year,mo:+o.month,d:+o.day}}catch(e){const d=new Date(t);return{h:d.getHours(),m:d.getMinutes(),wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()],y:d.getFullYear(),mo:d.getMonth()+1,d:d.getDate()}}};
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],WDN={Sun:'domingo',Mon:'segunda',Tue:'terça',Wed:'quarta',Thu:'quinta',Fri:'sexta',Sat:'sábado'};
+// início (ms) da guerra mais recente que já começou, e da próxima
+function warStarts(t=now()){const b=BR(t);const off=Math.round((t-Date.UTC(b.y,b.mo-1,b.d,b.h,b.m))/1800000)*1800000;// diferença entre UTC e Brasília
+  const base=Date.UTC(b.y,b.mo-1,b.d,AG.warH,0)+off;let d=(WD.indexOf(b.wd)-WD.indexOf(AG.warD)+7)%7;let last=base-d*864e5;if(last>t)last-=7*864e5;return{last,next:last+7*864e5}}
+const warId=s=>'w'+Math.floor(s/864e5);
+function warState(t=now()){const {last,next}=warStarts(t),dur=(AG.warMin||30)*60000;const live=t>=last&&t<last+dur;
+  return{live,id:warId(last),start:last,end:last+dur,next:live?last:next,prevId:live?warId(last-7*864e5):warId(last)}}
+window.ECO_WAR=warState;
+const hm=ms=>{const m=Math.max(0,Math.round(ms/60000));return m>=1440?`${Math.floor(m/1440)}d ${Math.floor(m%1440/60)}h`:m>=60?`${Math.floor(m/60)}h ${m%60}min`:`${m} min`};
+
+// ---------- placar (servidor) ----------
+const CW={data:{},t:0,holder:null,names:{}};window.ECO_CW=CW;
+async function cwLoad(){try{const st=warState();const ids=[st.id,st.prevId];const [a,b,g]=await Promise.all(ids.map(i=>fetch(DBU()+'/castelo/'+i+'.json').then(r=>r.json()).catch(()=>null)).concat([fetch(DBU()+'/guilds.json').then(r=>r.json()).catch(()=>null)]));
+  CW.data[st.id]=a||{};CW.data[st.prevId]=b||{};CW.names=Object.fromEntries(Object.entries(g||{}).map(([k,v])=>[k,v]));CW.t=now();
+  // dono do castelo = vencedor da última guerra que já terminou
+  const doneId=st.live?st.prevId:(now()>=st.end?st.id:st.prevId);CW.holder=winner(CW.data[doneId]||{});
+  if(UI.sheet==='guilda'&&UI.gtab53==='guerra')renderSheet()}catch(e){}}
+function scores(w){return Object.entries(w||{}).map(([gid,us])=>({gid,pts:Object.values(us||{}).reduce((s,v)=>s+(+v||0),0)})).filter(x=>x.pts>0).sort((a,b)=>b.pts-a.pts)}
+function winner(w){const s=scores(w);return s.length?s[0].gid:null}
+setTimeout(cwLoad,4000);setInterval(()=>{cwLoad()},warState().live?30000:180000);
+const holder=()=>CW.holder;
+const inGuild=()=>{try{const m=GUILD.gid&&GUILD.members&&GUILD.members[NET.uid];return !!(m&&m.r!=='Pendente')}catch(e){return false}};
+const isHolder=()=>inGuild()&&GUILD.gid===holder();
+
+// ---------- hunts especiais (criadas no fim da lista, escondidas) ----------
+function tmpl(){const ok=HUNTS.filter(h=>listedHunt(h)&&!h.arena&&!h.tower&&h.lvl<=S.lvl).sort((a,b)=>b.lvl-a.lvl);return ok[0]||HUNTS.find(h=>listedHunt(h))}
+const IDX={};
+function mk(key,nome,desc){const t=HUNTS.find(h=>listedHunt(h))||HUNTS[0];const h=Object.assign({},t,{id:key,nome,desc,hidden:1,floors:1,x54:key});HUNTS.push(h);IDX[key]=HUNTS.length-1;return h}
+mk('sede','Sede da Guilda','Espaço só dos membros da guilda: cacem juntos e se encontrem aqui.');
+mk('castelo','Castelo da Guilda','Hunt exclusiva da guilda que venceu a Guerra pelo Castelo.');
+mk('campo','Campo de Batalha do Castelo','Guerra entre guildas: PvP liberado entre guildas diferentes.');
+{const h=HUNTS[IDX.campo];const c=HUNTS.find(x=>x.id==='cripta')||h;Object.assign(h,{mobs:c.mobs.slice(),lvl:50,theme:c.theme,max:Math.max(14,c.max||14),boss:null,tier:c.tier})}
+function prep(key){const h=HUNTS[IDX[key]];if(key==='campo'){h.city=S.city||h.city;return h}const t=tmpl();
+  Object.assign(h,{mobs:t.mobs.slice(),lvl:t.lvl,theme:t.theme,max:Math.max(t.max||12,12),tier:t.tier,boss:key==='castelo'?t.boss:null,city:S.city||t.city});
+  h.id=key==='sede'?'sede_'+GUILD.gid:'castelo';return h}
+function enter(key){const i=IDX[key];prep(key);closeSheet();if(startHunt(i)!==false){msg(key==='sede'?'Você entrou na Sede da Guilda.':key==='castelo'?'Você entrou no Castelo da Guilda. Loot extra aqui!':'Você entrou no Campo de Batalha. Defenda sua guilda!','c-sys')}}
+ACT.sede54=()=>{if(!inGuild())return toast('Entre numa guilda primeiro.');const lv=(window.ECO_GLV||1);if(lv<2)return toast('A sede abre quando a guilda chega no nível 2.');enter('sede')};
+ACT.cast54=()=>{if(!isHolder())return toast('Só a guilda dona do castelo entra aqui.');enter('castelo')};
+ACT.campo54=()=>{if(!inGuild())return toast('Só membros de guilda participam da guerra.');if(!warState().live)return toast('A guerra ainda não começou.');enter('campo')};
+const hereKey=()=>{try{return S&&S.hunt>=0&&HUNTS[S.hunt]&&HUNTS[S.hunt].x54}catch(e){return null}};
+// regras de entrada: expulsa quem não pode mais estar ali
+setInterval(()=>{try{const k=hereKey();if(!k)return;const out=w=>{toast(w);msg(w,'c-sys');goTemple(true)};
+  if(k==='campo'&&!warState().live)return out('A guerra acabou. Você voltou ao templo.');
+  if(k==='castelo'&&!isHolder()&&CW.t)return out('Sua guilda não é mais dona do castelo.');
+  if(k==='sede'&&!inGuild())return out('Você não está mais na guilda.')}catch(e){}},5000);
+
+// ---------- pontos da guerra ----------
+const MY={pts:0,id:'',dirty:false,sent:0};
+function addPts(n){const st=warState();if(!st.live||!inGuild())return;if(MY.id!==st.id){MY.id=st.id;MY.pts=+((CW.data[st.id]||{})[GUILD.gid]||{})[NET.uid]||0}MY.pts+=n;MY.dirty=true}
+try{const _km54=killMob;killMob=function(m){const alive=Wd&&Wd.mobs&&Wd.mobs.includes(m);const r=_km54.apply(this,arguments);try{if(alive&&hereKey()==='campo'&&m&&m.id!=='boneco')addPts(1)}catch(e){}return r}}catch(e){}
+setInterval(async()=>{try{if(!MY.dirty||!ON()||now()-MY.sent<20000)return;MY.dirty=false;MY.sent=now();await fetch(netURL(`castelo/${MY.id}/${GUILD.gid}/${NET.uid}`),{method:'PUT',body:JSON.stringify(MY.pts)});
+  (CW.data[MY.id]=CW.data[MY.id]||{})[GUILD.gid]=Object.assign((CW.data[MY.id]||{})[GUILD.gid]||{},{[NET.uid]:MY.pts})}catch(e){}},5000);
+// PvP na guerra: matar alguém de outra guilda vale 25 pontos e não dá frag
+try{const _ps54=pvpSend;pvpSend=function(o){try{if(o&&o.pt==='pvpKill'&&hereKey()==='campo')o=Object.assign({},o,{g:GUILD.gid||'',war:1,sk:Math.max(1,o.sk||0)})}catch(e){}return _ps54.call(this,o)}}catch(e){}
+try{const _sig54=window.pvpSignal;window.pvpSignal=function(k,m){try{if(m&&m.pt==='pvpKill'&&m.to===NET.uid&&m.war&&hereKey()==='campo'&&(!m.g||m.g!==GUILD.gid)){addPts(25);msg(`Guerra: você derrotou ${m.n}! +25 pontos para a guilda.`,'c-lv')}}catch(e){}return _sig54.apply(this,arguments)}}catch(e){}
+// na guerra, membros da mesma guilda não se atacam
+try{const _spt54=setPvpTarget;setPvpTarget=function(uid){try{if(hereKey()==='campo'){const p=ghostBy(uid);if(p&&p.g&&GUILD.name&&p.g===GUILD.name)return toast('É da sua guilda!')}}catch(e){}return _spt54.apply(this,arguments)}}catch(e){}
+
+// ---------- bônus do castelo ----------
+try{const _ge54=gainExp;gainExp=function(x){try{if(x>0&&isHolder())x=Math.round(x*(1+(AG.castXp||15)/100))}catch(e){}return _ge54.call(this,x)}}catch(e){}
+try{const _gl54=gainLoot;gainLoot=function(id,n){try{if(n>0&&hereKey()==='castelo'&&Math.random()<.3)n+=1}catch(e){}return _gl54.call(this,id,n)}}catch(e){}
+
+// ---------- aviso da guerra (usa a faixa de eventos) ----------
+let warn='';setInterval(()=>{try{if(!S)return;const st=warState();const left=st.live?st.end-now():st.next-now();const k=st.live?'L':left<15*60000?'15':left<60*60000?'60':'';
+  if(k&&k!==warn){warn=k;const t=st.live?'⚔ A Guerra pelo Castelo começou! Guilda → Guerra':`⚔ Guerra pelo Castelo em ${hm(left)}`;toast(t);try{msg(t,'c-lv')}catch(e){}}if(!k)warn=''}catch(e){}},20000);
+
+// ---------- abas da guilda: Guerra e Sede ----------
+try{
+  const _gs54=SHEETS.guilda;SHEETS.guilda=function(){const r=_gs54.apply(this,arguments);try{if(!GUILD.gid||!inGuild())return r;
+    // nível da guilda calculado pela v53
+    const M=Object.values(GUILD.members||{}).filter(m=>m.r!=='Pendente');const pts=M.reduce((s,m)=>s+(+m.gx||0),0);window.ECO_GLV=Math.min(50,Math.floor(Math.sqrt(pts/200))+1);
+    const tab=UI.gtab53||'geral';
+    r[1]=r[1].replace(/(<div class="g53-tabs">)/,'$1').replace(/(data-v="ranking">Ranking<\/button>)/,`$1<button class="btn sm ${tab==='guerra'?'pri':''}" data-a="gtab53" data-v="guerra">⚔ Guerra</button><button class="btn sm ${tab==='sede'?'pri':''}" data-a="gtab53" data-v="sede">🏰 Sede</button>`);
+    if(tab==='guerra'||tab==='sede'){const i=r[1].indexOf('</div>',r[1].indexOf('class="g53-tabs"'));r[1]=r[1].slice(0,i+6)+(tab==='guerra'?warHTML():sedeHTML())}
+    if(isHolder())r[1]=r[1].replace('bônus de <b class="gold">',`👑 dona do castelo · bônus de <b class="gold">+${AG.castXp||15}% (castelo) `);
+  }catch(e){console.warn('eco54 sheet',e)}return r};
+  ACT.gtab53w=v=>{UI.gtab53=v;cwLoad();renderSheet()};
+}catch(e){}
+const gName=id=>(CW.names[id]&&CW.names[id].n)||id;
+function warHTML(){const st=warState(),cur=scores(CW.data[st.id]),h=holder();
+  return`<div class="li" style="display:block;margin-bottom:8px;${st.live?'border-color:#e6c46b':''}"><b>${st.live?'⚔ GUERRA AGORA!':'⚔ Guerra pelo Castelo'}</b><small class="muted" style="display:block">Toda ${WDN[AG.warD]||'semana'} às ${AG.warH}h (Brasília), por ${AG.warMin} minutos. ${st.live?`Acaba em ${hm(st.end-now())}.`:`Começa em ${hm(st.next-now())}.`}</small>
+    <p style="margin:6px 0 0;font-size:.85rem">No Campo de Batalha o PvP fica liberado entre guildas diferentes, sem caveira. Cada criatura vale 1 ponto e cada jogador inimigo derrotado vale 25. A guilda com mais pontos fica com o <b>Castelo</b> até a próxima guerra: <b class="gold">+${AG.castXp}% de XP</b> para todos os membros e uma hunt exclusiva.</p>
+    ${st.live?'<div class="row" style="margin-top:8px"><button class="btn pri" data-a="campo54">Entrar no Campo de Batalha</button></div>':''}</div>
+    <h3>Dono do castelo</h3>${h?`<div class="li"><div class="t"><b>👑 ${esc(gName(h))}</b><small>${h===GUILD.gid?'É a sua guilda!':'Vença a próxima guerra para tomar o castelo.'}</small></div>${h===GUILD.gid?'<button class="btn sm pri" data-a="cast54">Entrar no Castelo</button>':''}</div>`:'<p class="muted">Ninguém ainda. A primeira guerra decide!</p>'}
+    <h3>Placar ${st.live?'ao vivo':'desta semana'}</h3><div class="list">${cur.map((x,k)=>`<div class="li" style="${x.gid===GUILD.gid?'border-color:#e6c46b':''}"><div class="t"><b>${k+1}º ${esc(gName(x.gid))}</b><small>${x.pts} pontos</small></div></div>`).join('')||'<p class="muted">Sem pontos ainda.</p>'}</div>`}
+function sedeHTML(){const lv=window.ECO_GLV||1;
+  return`<div class="li" style="display:block;margin-bottom:8px"><b>🏰 Sede da Guilda</b><p style="margin:6px 0 8px;font-size:.85rem">Um espaço só da sua guilda: as criaturas são as da melhor hunt para o seu nível, e só membros da guilda entram, então vocês se encontram e caçam juntos.</p>
+    ${lv>=2?'<button class="btn pri" data-a="sede54">Ir para a Sede</button>':`<p class="muted" style="margin:0">Abre quando a guilda chegar ao nível 2 (agora: nível ${lv}).</p>`}</div>
+    ${isHolder()?'<div class="li" style="display:block"><b>👑 Castelo da Guilda</b><p style="margin:6px 0 8px;font-size:.85rem">Sua guilda venceu a guerra! Hunt exclusiva com loot extra e +'+(AG.castXp||15)+'% de XP a semana toda.</p><button class="btn pri" data-a="cast54">Entrar no Castelo</button></div>':''}`}
+// agenda: guerra aparece na lista de eventos
+try{const _ev54=SHEETS.eventos52;if(_ev54)SHEETS.eventos52=function(){const r=_ev54.apply(this,arguments);const st=warState();
+  r[1]=r[1].replace('<div class="list">',`<div class="list"><div class="li" style="${st.live?'border-color:#e6c46b':''}"><div class="t"><b>${WDN[AG.warD]} ${AG.warH}h · Guerra pelo Castelo</b><small>${st.live?'ACONTECENDO AGORA · Guilda → Guerra':'começa em '+hm(st.next-now())} · a guilda vencedora ganha +${AG.castXp}% de XP na semana</small></div></div>`);return r}}catch(e){}
+
+// ---------- GOD: dia e hora da guerra ----------
+try{ACT.war54=async v=>{if(!(typeof isGod==='function'&&isGod()))return;const o=Object.assign({},AG);
+  if(v==='d+')o.warD=WD[(WD.indexOf(o.warD)+1)%7];else if(v==='d-')o.warD=WD[(WD.indexOf(o.warD)+6)%7];else if(v==='h+')o.warH=(o.warH+1)%24;else if(v==='h-')o.warH=(o.warH+23)%24;
+  else if(v==='now'){const b=BR(now());o.warD=b.wd;o.warH=b.h}
+  try{const r=await fetch(netURL('agenda'),{method:'PUT',body:JSON.stringify(o)});if(!r.ok)throw new Error('HTTP '+r.status);Object.assign(AG,o);toast('Guerra: '+WDN[o.warD]+' às '+o.warH+'h.')}catch(e){toast('Não salvou: '+e.message)}renderSheet()};
+  if(SHEETS.god){const _g54=SHEETS.god;SHEETS.god=function(){const r=_g54.apply(this,arguments);if(!(typeof isGod==='function'&&isGod()))return r;
+    r[1]=r[1].replace('<b>Agenda de eventos (horário de Brasília)</b>',`<b>Agenda de eventos (horário de Brasília)</b><div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0"><span>Guerra pelo Castelo: <b>${WDN[AG.warD]} ${AG.warH}h</b></span><button class="btn sm" data-a="war54" data-v="d-">◀ dia</button><button class="btn sm" data-a="war54" data-v="d+">dia ▶</button><button class="btn sm" data-a="war54" data-v="h-">−1h</button><button class="btn sm" data-a="war54" data-v="h+">+1h</button><button class="btn sm" data-a="war54" data-v="now">Testar agora (esta hora)</button></div>`);return r}}}catch(e){}
+})();</script>
