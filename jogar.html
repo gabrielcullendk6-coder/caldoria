@@ -7795,10 +7795,10 @@ const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const pk=a=>a[Math.floor(Math.random()*a.length)];
 const hsh=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0)/4294967296};
 const brHour=t=>{try{return +new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).format(new Date(t))%24}catch(e){return new Date(t).getHours()}};
-const peak=h=>h>=19&&h<=23?.72:h>=12&&h<19?.5:h>=7&&h<12?.38:.18;
+const peak=h=>h>=19&&h<=23?.68:h>=12&&h<19?.48:h>=7&&h<12?.38:.32;
 // mesmo resultado em qualquer aparelho
 const tbOnline=(b,t=now())=>{const slot=Math.floor(t/(20*60*1000));return hsh(b.k+'|'+slot)<peak(brHour(t))};
-const tbLevel=(b,t=now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);const r=b.r||1;return Math.max(1,Math.round(b.l0+r*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
+const tbLevel=(b,t=now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);if(b.f===2)return Math.max(8,Math.min(500,Math.round(500-(500-b.l0)*Math.exp(-(b.r||1)*0.003*days))));const r=b.r||1;return Math.max(1,Math.round(b.l0+r*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
 function skills(v,l,seed){const j=k=>Math.round(hsh(seed+k)*4);const g=x=>Math.max(10,Math.round(x));
   return v==='druida'||v==='feiticeiro'?{ml:Math.round(l*.38)+j('a'),me:10,di:10,fi:10,sh:g(10+l*.05)+j('b')}
    :v==='arqueiro'?{ml:Math.round(l*.12),me:10,di:g(12+l*.55)+j('c'),fi:10,sh:g(12+l*.3)+j('d')}
@@ -7811,9 +7811,23 @@ const NM_F=['Luna','Bia','Mel','Yasmin','Lara','Duda','Clara','Nina','Sofia','Ma
 const A=['Dark','Shadow','Mago','Lord','Rei','Lobo','Dragon','Fenix','Black','Night','Storm','Fire','Ice','Toxic','Silent','Mad','Lucky','Iron','Blood','Ghost','Sir','Lady','Doom','Elite','Kill','Blaze','Frost','Zero','Neo'];
 const B=['Slayer','Hunter','Killer','Knight','Mage','Archer','Paladin','Druid','Monk','Blade','Wolf','Reaper','Master','King','Sniper','Tank','Hero','Warrior','Rider','Soul','Fang'];
 const S2=['Lamina','Arcana','Sombria','do Norte','Brava','Veloz','da Nevoa','Rubra','Serena','do Vale','Feroz','Estelar'];
-function nick(f){const nm=pk(f?NM_F:NM_M),d=()=>rnd(1,99),y=()=>pk(['br','BR','2k','xd','tv','pvp','gg']);
-  return pk([()=>`${pk(A)} ${pk(B)}`,()=>`${pk(A)}${pk(B)}${d()}`,()=>`${nm} ${y()}`,()=>`${nm}${pk(B)}`,()=>`xX${nm}Xx`,()=>`${nm}_${d()}`,()=>`${pk(A)} ${nm}`,()=>`${nm} ${pk(S2)}`,()=>`${nm.toLowerCase()}${pk(['zinha','zin','gamer','top','tv'])}`])().slice(0,20)}
-const lvlRoll=()=>{const r=Math.random();return r<.45?rnd(3,35):r<.8?rnd(35,90):r<.95?rnd(90,180):rnd(180,320)};
+const FM=['Aldric','Ragnar','Thorin','Kael','Darian','Garrick','Varnak','Ulric','Tharok','Dorian','Bastian','Fenrik','Orrin','Sylas','Cedric','Rowan','Hakon','Elric','Galen','Torvin','Corvin','Joran','Malakai','Pyrrus','Soren','Valen','Xander','Zephyr','Brom','Kharvok','Draven','Lucan','Thiago','Rafael','Diego','Matheus','Gustavo','Caio','Bento','Heitor'];
+const FF=['Morwen','Elara','Lyra','Seraphine','Ysolde','Mirelle','Kaelith','Isolde','Liora','Zara','Tamsin','Vesper','Nyra','Astrid','Edda','Kira','Oriana','Rhea','Talia','Wren','Yara','Selene','Aria','Freya','Bruna','Camila','Larissa','Vitoria','Beatriz','Luana','Helena','Maite'];
+const SUR=['Ironfist','Shadowbane','Stormborn','Nightshade','Frostheart','Ashwood','Blackthorn','Duskwalker','Emberfall','Grimward','Moonshadow','Silverleaf','Stonebreaker','Thornwood','Wolfsbane','Brightblade','Coldwater','Darkwater','Steelheart','Firebrand','Graymane','Hawkeye','Redmane','Wintermoor'];
+const TIT_M=['Sir','Lord','Mestre','Elder','Brother','Capitao'],TIT_F=['Lady','Dama','Mestra','Elder','Sister','Rainha'];
+const ADJ=['Eternal','Silent','Mystic','Dark','Holy','Wild','Lost','Ancient','Crimson','Golden','Mad','Iron'];
+const EPI=['o Bravo','Mao de Ferro','Sangue Frio','da Nevoa','Coracao de Pedra','o Errante','do Norte','Olho de Falcao','Punho de Aco','a Sombra'];
+const EPF=['a Brava','Mao de Ferro','Sangue Frio','da Nevoa','Coracao de Pedra','a Errante','do Norte','Olho de Falcao','Punho de Aco','a Sombra'];
+const CITY=['Valtora','Carvalhal','Pedra Clara','Venera','Yalmora','Forjaduna'];
+const SY1=['Kha','Dra','Vor','Zan','Mor','Thal','Gro','Ul','Ar','Bel','Cor','Ery','Fen','Ish','Jor','Kel','Lun','Nar','Oth','Rak','Syl','Tor','Vel','Xer'];
+const SY2=['vok','dren','mir','gar','thas','rin','lok','zul','dor','wyn','ric','nar','mos','tek','vin','las','gorn','dris'];
+const syl=()=>{const a=pk(SY1)+pk(SY2);return a.charAt(0).toUpperCase()+a.slice(1)};
+function nick(f){for(let t=0;t<20;t++){const n=nick1(f);if(n.length<=20)return n}return pk(f?FF:FM)}
+function nick1(f){const F=f?FF:FM;const r=Math.random();let n;
+  if(r<.30)n=`${pk(F)} ${pk(SUR)}`;else if(r<.43)n=`${pk(f?TIT_F:TIT_M)} ${pk(F)}`;else if(r<.53)n=`${pk(F)} de ${pk(CITY)}`;else if(r<.63)n=`${pk(ADJ)} ${pk(F)}`;
+  else if(r<.78)n=`${pk(F)} ${pk(f?EPF:EPI)}`;else if(r<.90)n=`${syl()} ${syl()}`;else n=syl();
+  return n}
+const lvlRoll=()=>{const r=Math.random();return r<.30?rnd(8,60):r<.60?rnd(60,150):r<.85?rnd(150,300):rnd(300,480)};
 const VOCS=['cavaleiro','arqueiro','druida','feiticeiro','monge'];
 const godOn=()=>{try{return typeof isGod==='function'&&isGod()&&typeof netOn==='function'&&netOn()}catch(e){return false}};
 const DBU=()=>{try{const c=(window.ECO_CONFIG||{}).online||{};return String(c.databaseURL||'').replace(/\/$/,'')}catch(e){return''}};
@@ -7842,20 +7856,25 @@ try{const _on51=SHEETS.online;SHEETS.online=function(){const r=_on51.apply(this,
 async function put(k,o){try{await fetch(netURL('rank/'+k),{method:'PUT',body:JSON.stringify(o)})}catch(e){}}
 async function del(k){try{await fetch(netURL('rank/'+k),{method:'DELETE'})}catch(e){}}
 const mine=()=>TB.list.filter(b=>String(b.k).startsWith((NET.uid||'?')+'_tb'));
-async function create(n){await load();const have=mine().length;for(let i=have;i<n;i++){const f=Math.random()<.45,v=pk(VOCS),l=lvlRoll(),k=`${NET.uid}_tb${i}`;
-  const c=now()-rnd(1,40)*864e5,r=+(0.5+Math.random()*1.5).toFixed(2),l0=Math.max(1,Math.round(l-r*((now()-c)/864e5)*(l<50?1.4:l<150?.8:.35)));
-  await put(k,{b:1,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r,l,...skills(v,l,k),t:now()})}await load()}
-// de vez em quando o GOD grava o nível atual no servidor (para quem usa versões antigas do jogo)
-async function sync(){if(!godOn())return;await load();for(const b of mine()){const o=live(b);delete o.k;await put(b.k,o)}}
-setInterval(sync,30*60*1000);setTimeout(sync,30000);
+function botRec(k,keep){const f=keep&&keep.x?keep.x==='f':Math.random()<.45,v=keep&&keep.v||pk(VOCS),l=lvlRoll(),days=rnd(5,120),c=now()-days*864e5,r=+(0.6+Math.random()*.8).toFixed(2);
+  let l0=Math.round(500-(500-l)*Math.exp(r*0.003*days));l0=Math.max(8,Math.min(l,l0));
+  const b={b:1,f:2,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r};const L=tbLevel(b);return Object.assign(b,{l:L,...skills(v,L,k),t:now()})}
+const TARGET=70;
+async function create(n){await load();const used=new Set(mine().map(b=>b.k));let i=0,made=0;while(mine().length+made<n&&i<500){const k=`${NET.uid}_tb${i}`;i++;if(used.has(k))continue;await put(k,botRec(k));made++}await load()}
+// o GOD mantém a população: renova bots antigos (nomes e níveis novos) e completa até 70
+async function sync(){if(!godOn())return;await load();
+  try{if(localStorage.getItem('eco-tb51-off')==='1')return}catch(e){}
+  for(const b of mine()){if(b.f!==2){await put(b.k,botRec(b.k,b))}}
+  if(mine().length<TARGET)await create(TARGET);await load()}
+setInterval(sync,30*60*1000);setTimeout(sync,15000);
 async function wipe(){await load();for(const b of mine())await del(b.k);await load()}
 try{
   ACT.tb51=async v=>{if(!godOn())return toast('Só o CHAR GOD, online, controla os bots de teste.');
-    if(v==='off'){toast('Apagando bots de teste…');await wipe();toast('Bots de teste apagados do ranking e do online.');return renderSheet()}
-    toast('Criando bots de teste…');await create(+v||25);toast(`${mine().length} bots de teste no ranking.`);renderSheet()};
+    if(v==='off'){try{localStorage.setItem('eco-tb51-off','1')}catch(e){}toast('Apagando bots de teste…');await wipe();toast('Bots de teste apagados do ranking e do online.');return renderSheet()}
+    try{localStorage.removeItem('eco-tb51-off')}catch(e){}toast('Criando bots de teste…');await create(+v||TARGET);toast(`${mine().length} bots de teste no ranking.`);renderSheet()};
   const _cf51=SHEETS.config;SHEETS.config=function(){const r=_cf51.apply(this,arguments);if(!godOn())return r;const n=mine().length,o=online().length;
-    r[1]=`<h3>Bots de teste (só CHAR GOD)</h3><p class="muted" style="margin:0 0 8px;font-size:.85rem">Bots no ranking e no online, 24 horas, mesmo com você offline. Entram e saem do online conforme o horário (mais à noite) e sobem de nível sozinhos. <b>Desligue antes de divulgar o jogo ou de vender VIP</b>: o botão apaga todos de uma vez.</p>
-      <p style="margin:0 0 8px">Agora: <b>${n}</b> no ranking · <b>${o}</b> online</p><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><button class="btn sm pri" data-a="tb51" data-v="15">15 bots</button><button class="btn sm pri" data-a="tb51" data-v="30">30 bots</button><button class="btn sm pri" data-a="tb51" data-v="60">60 bots</button><button class="btn sm" data-a="tb51" data-v="off">Desligar e apagar</button></div>`+r[1];return r};
+    r[1]=`<h3>Bots de teste (só CHAR GOD)</h3><p class="muted" style="margin:0 0 8px;font-size:.85rem">Bots no ranking e no online, 24 horas, mesmo com você offline. Entram e saem do online conforme o horário (uns 20 de madrugada, 40 ou mais à noite) e sobem de nível sozinhos, do 8 ao 500 (chegar no 500 leva meses). <b>Desligue antes de divulgar o jogo ou de vender VIP</b>: o botão apaga todos de uma vez.</p>
+      <p style="margin:0 0 8px">Agora: <b>${n}</b> no ranking · <b>${o}</b> online</p><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><button class="btn sm pri" data-a="tb51" data-v="70">70 bots</button><button class="btn sm pri" data-a="tb51" data-v="100">100 bots</button><button class="btn sm" data-a="tb51" data-v="off">Desligar e apagar</button></div>`+r[1];return r};
 }catch(e){console.warn('eco51',e)}
 })();
 </script>
@@ -8205,3 +8224,80 @@ try{ACT.war54=async v=>{if(!(typeof isGod==='function'&&isGod()))return;const o=
   if(SHEETS.god){const _g54=SHEETS.god;SHEETS.god=function(){const r=_g54.apply(this,arguments);if(!(typeof isGod==='function'&&isGod()))return r;
     r[1]=r[1].replace('<b>Agenda de eventos (horário de Brasília)</b>',`<b>Agenda de eventos (horário de Brasília)</b><div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0"><span>Guerra pelo Castelo: <b>${WDN[AG.warD]} ${AG.warH}h</b></span><button class="btn sm" data-a="war54" data-v="d-">◀ dia</button><button class="btn sm" data-a="war54" data-v="d+">dia ▶</button><button class="btn sm" data-a="war54" data-v="h-">−1h</button><button class="btn sm" data-a="war54" data-v="h+">+1h</button><button class="btn sm" data-a="war54" data-v="now">Testar agora (esta hora)</button></div>`);return r}}}catch(e){}
 })();</script>
+<script id="eco55-js">
+// ===== v55: fraquezas e resistências das criaturas no estilo Tibia (TibiaWiki) =====
+// Valor guardado = resistência (%). Dano recebido = 100 − resistência. Ex.: -25 → recebe 125% (fraco); 100 → imune.
+(function(){
+'use strict';
+const N=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+const has=(n,re)=>re.test(n);
+const CAT=[
+ // ordem importa: o primeiro que bater decide a base
+ ['fantasma',/espectro|fantasma|alma |alma$|espirito|assombra|aparicao|banshee|wraith|ceifador/,{phys:65,death:100,earth:50,ice:20,holy:-25,fire:0,energy:0}],
+ ['morto-vivo',/esqueleto|zumbi|morto|mumia|lich|vampir|carnical|ghoul|caveira|ossos|osseo|necro|cripta|sepulcr|tumulo|cadaver/,{death:100,earth:40,ice:20,holy:-25,fire:-10,phys:0,energy:0}],
+ ['demonio',/demon|diabo|sucubo|incubo|infernal|abiss|capeta|imp\b|tirano das chamas/,{fire:90,death:20,earth:40,energy:-10,ice:-15,holy:-15,phys:0}],
+ ['dragao',/dragao|draco(?!nian)|wyrm|wyvern|serpe alada/,{fire:80,earth:50,energy:20,ice:-10,holy:0,death:0,phys:0}],
+ ['construto',/golem|automato|construto|preservador|maquina|engenhoca|gargula|estatua|rocha|pedra|mecanic|ferro|bronze|aco\b/,{phys:25,earth:60,death:50,fire:20,ice:10,energy:-15,holy:0}],
+ ['fogo',/fogo|brasa|chama|lava|magma|igneo|fenix|salamandra|incandesc|flamej|cinzas?\b|fornalha|solar/,{fire:100,ice:-25,earth:20,energy:10,phys:10,holy:0,death:0}],
+ ['gelo',/gelo|gelid|neve|glacial|congel|inverno|frio|yeti|geada|polar|nevasca/,{ice:100,fire:-25,energy:-10,earth:-10,phys:0,holy:0,death:0}],
+ ['energia',/energia|trovao|raio|tempest|eletric|relampago|plasma|fulmin|elemental do ar|harpia|vento|tormenta|faisca|prisma/,{energy:100,earth:-20,ice:10,fire:0,phys:0,holy:0,death:0}],
+ ['agua',/enguia|tubarao|polvo|kraken|sereia|caranguejo|peixe|marinh|coral|abissal das aguas|tritao|naga/,{ice:50,fire:20,energy:-25,earth:0,phys:0,holy:0,death:0}],
+ ['gosma',/limo|gosma|geleia|lodo|ooze/,{earth:100,phys:20,death:20,energy:-15,fire:-10,ice:0,holy:0}],
+ ['celestial',/anjo|celest|serafim|sagrad|divin|aurora|sol eterno|luz\b|paladino|guardia celeste|dourad/,{holy:100,death:-25,fire:10,phys:0,earth:0,ice:0,energy:0}],
+ ['trevas',/trevas|sombr|escurid|noite|vazio|abismo|corrompid|maldit/,{death:60,holy:-25,earth:10,phys:0,fire:0,ice:0,energy:0}],
+ ['mago',/mago|feiticeir|bruxa|xama|druida|cultista|necromante|arcan|bruxo|vidente|alquimista/,{phys:-10,holy:0,death:0}],
+ ['planta',/planta|arvore|raiz|cogumelo|fungo|espinh|flor|trepadeira|carvalho|ent\b|musgo|vinha/,{earth:100,ice:10,fire:-25,energy:0,phys:0,holy:0,death:0}],
+ ['inseto',/aranha|vespa|abelha|escorpiao|escolopendra|besouro|formiga|larva|verme|centopeia|louva/,{earth:60,fire:-20,ice:0,energy:0,phys:-10,holy:0,death:0}],
+ ['serpente',/serpente|cobra|vibora|lagart|crocodilo|jacare|sapo|brejo|pantano|basilisco/,{earth:50,ice:-10,fire:-5,energy:0,phys:0,holy:0,death:0}],
+ ['humanoide',/orc|goblin|troll|ogro|gigante|minotauro|bandid|ladra|pirata|amazona|barbar|guerreir|cacador|arqueir|cavaleir|guarda|soldado|senhor da guerra|elfo|anao|homem|draconian|chacal|gnoll|kobold|centauro/,{earth:10,fire:-5,death:-5,phys:0,ice:0,energy:0,holy:0}],
+ ['animal',/rato|gato|corvo|javali|lobo|urso|leao|tigre|cervo|morcego|hiena|macaco|galinha|cao\b|raposa|coruja|abutre|aguia|bode|touro|alce|pantera|grifo|porco|coelho|tatu|cavalo|camelo|elefante|mamute|rinoceronte/,{fire:-10,earth:0,ice:0,energy:0,phys:-10,holy:0,death:0}],
+];
+const OPP={fire:'ice',ice:'fire',earth:'fire',energy:'earth',death:'holy',holy:'death'};
+const EL7=['phys','fire','ice','earth','energy','holy','death'];
+function classify(id,m){
+  const n=N(m.nome)||N(id).replace(/_/g,' ');let cat=null,base=null;
+  for(const [c,re,r] of CAT){if(has(n,re)){cat=c;base=Object.assign({},r);break}}
+  const el=m.rel||m.mel||'';
+  if(!base){cat=el&&el!=='phys'?'elemental':'neutro';base={}}
+  // a criatura resiste ao elemento que ela mesma usa
+  if(el&&el!=='phys'){base[el]=Math.max(base[el]||0,cat==='mago'?30:60);const o=OPP[el];if(o&&!(base[o]<0)&&!(base[o]>=60))base[o]=Math.min(base[o]||0,-15)}
+  // variação pequena e fixa por criatura (parece mais natural, igual ao Tibia)
+  let h=0;for(const c of String(id))h=(h*31+c.charCodeAt(0))|0;
+  for(const k of EL7){if(base[k]==null)base[k]=0;if(base[k]!==0&&base[k]!==100&&Math.abs(base[k])<90){const j=((h>>(EL7.indexOf(k)*3))&7)-3;base[k]=Math.round((base[k]+j*(Math.abs(base[k])>=20?2:1))/5)*5}}
+  if(m.boss){base.phys=Math.max(base.phys,10);for(const k of EL7)if(base[k]>=100&&k!==el&&k!=='death')base[k]=90;for(const k of EL7)if(base[k]<0)base[k]=Math.max(base[k],-20)}
+  if(m.id==='boneco'||id==='boneco')return{};
+  const out={};for(const k of EL7)if(base[k])out[k]=Math.max(-50,Math.min(100,base[k]));return{res:out,cat}}
+function apply(){let n=0;try{for(const id in MOBS){const m=MOBS[id];if(!m||m._w55||id==='boneco')continue;const r=classify(id,m);m.res=r.res;m.cat55=r.cat;m._w55=1;n++}}catch(e){console.warn('eco55',e)}return n}
+apply();setTimeout(apply,2500);setTimeout(apply,8000);
+window.ECO_W55={classify,apply,CAT:CAT.map(c=>c[0])};
+// texto no estilo TibiaWiki: dano recebido por elemento
+const ELN={phys:'Físico',fire:'Fogo',ice:'Gelo',earth:'Terra',energy:'Energia',holy:'Sagrado',death:'Morte'};
+window.ECO_W55.taken=function(res){return EL7.map(k=>[k,100-((res||{})[k]||0)])};
+window.ECO_W55.text=function(res){const L=EL7.map(k=>[k,100-((res||{})[k]||0)]);
+  const fr=L.filter(([,v])=>v>100).map(([k,v])=>`${ELN[k]} ${v}%`),fo=L.filter(([,v])=>v<100&&v>0).map(([k,v])=>`${ELN[k]} ${v}%`),im=L.filter(([,v])=>v<=0).map(([k])=>ELN[k]);
+  return[fr.length?'Fraca contra: '+fr.join(', '):'Sem fraqueza',fo.length?'Forte contra: '+fo.join(', '):'',im.length?'Imune: '+im.join(', '):''].filter(Boolean).join(' · ')};
+})();
+</script>
+<script id="eco56-js">
+// ===== v56: economia — menos ouro por criatura e loot sem pilhas absurdas =====
+(function(){
+'use strict';
+const GOLD_MULT=0.3;   // o ouro das criaturas era ×10; agora fica ×3 (0,3 × 10)
+const TASK_MULT=0.25,QUEST_MULT=0.35,BOSS_MULT=0.2;
+window.ECO_ECON={GOLD_MULT};
+// 1) ouro das criaturas
+try{const _km56=killMob;killMob=function(m){if(!m||!m.d||m.summon||!m.d.gold)return _km56.apply(this,arguments);const o=m.d;m.d=Object.assign({},o,{gold:Math.max(0,Math.round(o.gold*GOLD_MULT))});try{return _km56.apply(this,arguments)}finally{m.d=o}}}catch(e){}
+// 2) loot: quantidade máxima por item cresce devagar com o nível da hunt (antes chegava a milhares)
+function capN(id,h,lid,n){const base=((MOBS[id]&&MOBS[id].loot)||[]).find(l=>l[0]===lid);const b=Math.max(1,(base&&base[2])||1);const L=(h&&h.lvl)||1;
+  return Math.max(1,Math.min(n,Math.round(b*(1+L/500)),Math.max(b,12)))}
+try{const _sm56=scaledMob;scaledMob=function(id,h){const s=_sm56.apply(this,arguments);if(!s||!s.loot)return s;
+  return Object.assign({},s,{loot:s.loot.map(([lid,ch,n])=>{const it=ITEMS[lid];if(!it||it.slot)return[lid,ch,n];return[lid,ch,capN(id,h,lid,n||1)]})})}}catch(e){}
+// 3) estimativa de ouro por criatura nas listas (huntEcon) com os valores novos
+try{huntEcon=function(h){const ms=h.mobs.map(id=>scaledMob(id,h)).filter(Boolean);if(!ms.length)return{xp:0,gp:0};const ev=m=>(m.loot||[]).reduce((s,[lid,ch,n])=>s+(ITEMS[lid]&&!ITEMS[lid].slot?ITEMS[lid].value*ch/100*(n||1):0),0);
+  return{xp:Math.round(ms.reduce((s,m)=>s+m.xp,0)/ms.length*stage(S?S.lvl:1)*10),gp:Math.round(ms.reduce((s,m)=>s+(m.gold||0)/2*10*GOLD_MULT+ev(m),0)/ms.length)}}}catch(e){}
+// 4) recompensas de task, missões e chefe global proporcionais
+try{const _tr56=taskReward;taskReward=function(){const r=_tr56.apply(this,arguments);if(r&&r.gold)r.gold=Math.round(r.gold*TASK_MULT);return r}}catch(e){}
+try{if(typeof QUESTS!=='undefined')for(const q of QUESTS)if(q.rw&&q.rw.gold&&!q._g56){q.rw.gold=Math.round(q.rw.gold*QUEST_MULT);q._g56=1}}catch(e){}
+try{const _br56=bossReward;bossReward=function(){const g0=S.gold;const r=_br56.apply(this,arguments);try{const d=S.gold-g0;if(d>0)S.gold=g0+Math.round(d*BOSS_MULT)}catch(e){}return r}}catch(e){}
+})();
+</script>
