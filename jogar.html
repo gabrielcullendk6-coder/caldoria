@@ -7784,15 +7784,28 @@ try{const _ge50=gainExp;gainExp=function(x){const l0=S&&S.lvl;const r=_ge50.appl
 })();
 </script>
 <script id="eco51-js">
-// ===== v51: bots de teste no ranking e no online (liga e desliga pelo CHAR GOD) =====
+// ===== v51: bots de teste no ranking e no online, 24 horas (liga e desliga pelo CHAR GOD) =====
 // Os bots ficam gravados no ranking com a marca b:1, debaixo da conta do GOD. Desligar apaga todos de uma vez.
+// Nível e online são calculados pelo relógio, igual em todos os aparelhos: funcionam mesmo com o GOD offline.
 (function(){
 'use strict';
 const TB={list:[],t:0,busy:false};window.ECO_TB=TB;
-const ON_MS=15*60*1000;
 const now=()=>Date.now();
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const pk=a=>a[Math.floor(Math.random()*a.length)];
+const hsh=s=>{let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return(h>>>0)/4294967296};
+const brHour=t=>{try{return +new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',hour12:false}).format(new Date(t))%24}catch(e){return new Date(t).getHours()}};
+const peak=h=>h>=19&&h<=23?.72:h>=12&&h<19?.5:h>=7&&h<12?.38:.18;
+// mesmo resultado em qualquer aparelho
+const tbOnline=(b,t=now())=>{const slot=Math.floor(t/(20*60*1000));return hsh(b.k+'|'+slot)<peak(brHour(t))};
+const tbLevel=(b,t=now())=>{if(!b.c||!b.l0)return b.l||1;const days=Math.max(0,(t-b.c)/864e5);const r=b.r||1;return Math.max(1,Math.round(b.l0+r*days*(b.l0<50?1.4:b.l0<150?.8:.35)))};
+function skills(v,l,seed){const j=k=>Math.round(hsh(seed+k)*4);const g=x=>Math.max(10,Math.round(x));
+  return v==='druida'||v==='feiticeiro'?{ml:Math.round(l*.38)+j('a'),me:10,di:10,fi:10,sh:g(10+l*.05)+j('b')}
+   :v==='arqueiro'?{ml:Math.round(l*.12),me:10,di:g(12+l*.55)+j('c'),fi:10,sh:g(12+l*.3)+j('d')}
+   :v==='monge'?{ml:Math.round(l*.1),me:10,di:10,fi:g(12+l*.58)+j('e'),sh:g(10+l*.2)+j('f')}
+   :{ml:Math.round(l*.08),me:g(12+l*.6)+j('g'),di:10,fi:10,sh:g(12+l*.55)+j('h')}}
+const live=(b,t=now())=>{const l=tbLevel(b,t);return Object.assign({},b,{l,...skills(b.v,l,b.k),t:tbOnline(b,t)?t:(b.c||t)-36e5})};
+window.ECO_TBLIVE=live;
 const NM_M=['Kaio','Thiago','Rafa','Davi','Enzo','Bruno','Leo','Igor','Caio','Murilo','Heitor','Vitor','Gael','Otavio','Ravi','Joca','Pedro','Lucas','Gabriel','Matheus','Diego','Felipe'];
 const NM_F=['Luna','Bia','Mel','Yasmin','Lara','Duda','Clara','Nina','Sofia','Maya','Livia','Julia','Alice','Iris','Manu','Teca','Ana','Bruna','Carol','Gabi','Isa','Lele'];
 const A=['Dark','Shadow','Mago','Lord','Rei','Lobo','Dragon','Fenix','Black','Night','Storm','Fire','Ice','Toxic','Silent','Mad','Lucky','Iron','Blood','Ghost','Sir','Lady','Doom','Elite','Kill','Blaze','Frost','Zero','Neo'];
@@ -7801,11 +7814,6 @@ const S2=['Lamina','Arcana','Sombria','do Norte','Brava','Veloz','da Nevoa','Rub
 function nick(f){const nm=pk(f?NM_F:NM_M),d=()=>rnd(1,99),y=()=>pk(['br','BR','2k','xd','tv','pvp','gg']);
   return pk([()=>`${pk(A)} ${pk(B)}`,()=>`${pk(A)}${pk(B)}${d()}`,()=>`${nm} ${y()}`,()=>`${nm}${pk(B)}`,()=>`xX${nm}Xx`,()=>`${nm}_${d()}`,()=>`${pk(A)} ${nm}`,()=>`${nm} ${pk(S2)}`,()=>`${nm.toLowerCase()}${pk(['zinha','zin','gamer','top','tv'])}`])().slice(0,20)}
 const lvlRoll=()=>{const r=Math.random();return r<.45?rnd(3,35):r<.8?rnd(35,90):r<.95?rnd(90,180):rnd(180,320)};
-function skills(v,l){const g=x=>Math.max(10,Math.round(x+Math.random()*4));
-  return v==='druida'||v==='feiticeiro'?{ml:Math.round(l*.38+Math.random()*3),me:10,di:10,fi:10,sh:g(10+l*.05)}
-   :v==='arqueiro'?{ml:Math.round(l*.12),me:10,di:g(12+l*.55),fi:10,sh:g(12+l*.3)}
-   :v==='monge'?{ml:Math.round(l*.1),me:10,di:10,fi:g(12+l*.58),sh:g(10+l*.2)}
-   :{ml:Math.round(l*.08),me:g(12+l*.6),di:10,fi:10,sh:g(12+l*.55)}}
 const VOCS=['cavaleiro','arqueiro','druida','feiticeiro','monge'];
 const godOn=()=>{try{return typeof isGod==='function'&&isGod()&&typeof netOn==='function'&&netOn()}catch(e){return false}};
 const DBU=()=>{try{const c=(window.ECO_CONFIG||{}).online||{};return String(c.databaseURL||'').replace(/\/$/,'')}catch(e){return''}};
@@ -7813,39 +7821,159 @@ const DBU=()=>{try{const c=(window.ECO_CONFIG||{}).online||{};return String(c.da
 // ---------- todos os jogadores: lê os bots do ranking (leitura pública) ----------
 async function load(){if(TB.busy)return;TB.busy=true;try{const r=await fetch(DBU()+'/rank.json?orderBy=%22l%22&limitToLast=1000');const j=await r.json();
   if(j&&!j.error)TB.list=Object.entries(j).filter(([k,v])=>v&&v.b===1).map(([k,v])=>({k,...v}));TB.t=now()}catch(e){}finally{TB.busy=false}}
-const online=()=>TB.list.filter(b=>b.t&&now()-b.t<ON_MS);
+const online=()=>TB.list.filter(b=>tbOnline(b)).map(b=>live(b));
 window.ECO_TBPICK=function(f){const used=new Set(((window.ECO_BOTS||{}).list||[]).map(b=>b.n));const L=online().filter(b=>!used.has(b.n)&&(b.x?b.x===(f?'f':'m'):true));return L.length?pk(L):null};
 setTimeout(load,3000);setInterval(load,90000);
+const zoneOf=b=>{try{const l=tbLevel(b),hs=HUNTS.filter(h=>listedHunt(h)&&h.lvl<=l&&h.lvl>=l*.5-5);if(!hs.length)return'Cidade';const slot=Math.floor(now()/(20*60*1000));return hs[Math.floor(hsh(b.k+'z'+slot)*hs.length)].nome}catch(e){return'Cidade'}};
+
+// highscores do jogo: bots com nível e skills atualizados
+try{if(typeof netLoadRank==='function'){const _lr51=netLoadRank;netLoadRank=async function(){const r=await _lr51.apply(this,arguments);
+  try{if(NET.rank&&NET.rank.list){const s=NET.rank.sort||'l';NET.rank.list=NET.rank.list.map(x=>x.b===1?live(Object.assign({k:x.u},x)):x).sort((a,b)=>((+b[s]||-1)-(+a[s]||-1))||((+b.l||0)-(+a.l||0)));if(UI.sheet==='online'&&UI.sub==='rank')renderSheet()}}catch(e){}return r}}}catch(e){}
 
 // contador "● N" do chat, menu Online (N) e lista de online
 setInterval(()=>{try{const b=document.getElementById('eco43-net');if(!b||!b.textContent)return;const m=/● (\d+)/.exec(b.textContent);if(!m)return;const n=(typeof netFresh==='function'?netFresh().length+1:+m[1])+online().length;if(+m[1]!==n){b.textContent=`● ${n}`;b.title=`${n} jogador(es) online`}}catch(e){}},700);
 try{const _mn51=SHEETS.menu;SHEETS.menu=function(){const r=_mn51.apply(this,arguments);try{r[1]=r[1].replace(/(data-v="online"><img[^>]*>Online) \((\d+)\)/,(x,a,n)=>`${a} (${+n+online().length})`)}catch(e){}return r}}catch(e){}
 try{const _on51=SHEETS.online;SHEETS.online=function(){const r=_on51.apply(this,arguments);try{if((UI.sub||'lista')==='lista'){const L=online().sort((a,b)=>(b.l||0)-(a.l||0));
     r[1]=r[1].replace(/<p class="muted"[^>]*>(\d+) jogador\(es\) online/,(x,n)=>x.replace(n,String(+n+L.length)));
-    const rows=L.map(b=>`<div class="li"><img class="ic" src="${avatarURL(VOC[b.v]?b.v:'cavaleiro')}" alt=""><div class="t"><b>${esc(b.n)}</b><small>Nível ${b.l} · ${VOC[b.v]?VOC[b.v].nome:''}${b.g?' · &lt;'+esc(b.g)+'&gt;':''} · ${esc(b.zn||'Cidade')}</small></div></div>`).join('');
+    const rows=L.map(b=>`<div class="li"><img class="ic" src="${avatarURL(VOC[b.v]?b.v:'cavaleiro')}" alt=""><div class="t"><b>${esc(b.n)}</b><small>Nível ${b.l} · ${VOC[b.v]?VOC[b.v].nome:''}${b.g?' · &lt;'+esc(b.g)+'&gt;':''} · ${esc(zoneOf(b))}</small></div></div>`).join('');
     const i=r[1].lastIndexOf('</div>');if(i>0)r[1]=r[1].slice(0,i)+rows+r[1].slice(i)}}catch(e){}return r}}catch(e){}
 
-// ---------- só o CHAR GOD: criar, simular e apagar ----------
+// ---------- só o CHAR GOD: criar e apagar ----------
 async function put(k,o){try{await fetch(netURL('rank/'+k),{method:'PUT',body:JSON.stringify(o)})}catch(e){}}
 async function del(k){try{await fetch(netURL('rank/'+k),{method:'DELETE'})}catch(e){}}
 const mine=()=>TB.list.filter(b=>String(b.k).startsWith((NET.uid||'?')+'_tb'));
-function zoneFor(l){try{const hs=HUNTS.filter(h=>listedHunt(h)&&h.lvl<=l&&h.lvl>=l*.5-5);const h=hs.length?pk(hs):null;return h?h.nome:(CITIES[pk(Object.keys(CITIES))]||{}).nome||'Cidade'}catch(e){return'Cidade'}}
-async function create(n){const have=mine().length;for(let i=have;i<n;i++){const f=Math.random()<.45,v=pk(VOCS),l=lvlRoll();
-  await put(`${NET.uid}_tb${i}`,{b:1,x:f?'f':'m',n:nick(f),l,v,g:'',...skills(v,l),zn:zoneFor(l),t:Math.random()<.6?now():now()-rnd(20,600)*60000})}await load()}
-async function tick(){if(!godOn()||!LSon())return;await load();const h=new Date().getHours(),peak=(h>=18&&h<=23)?.7:(h>=8&&h<18)?.45:.2;
-  for(const b of mine()){const on=Math.random()<peak;const o={...b};delete o.k;
-    if(on){if(Math.random()<.35){o.l=(o.l||1)+(o.l<50?rnd(1,2):o.l<150?1:Math.random()<.4?1:0);Object.assign(o,skills(o.v,o.l))}o.t=now();if(Math.random()<.3)o.zn=zoneFor(o.l)}
-    await put(b.k,o)}await load()}
+async function create(n){await load();const have=mine().length;for(let i=have;i<n;i++){const f=Math.random()<.45,v=pk(VOCS),l=lvlRoll(),k=`${NET.uid}_tb${i}`;
+  const c=now()-rnd(1,40)*864e5,r=+(0.5+Math.random()*1.5).toFixed(2),l0=Math.max(1,Math.round(l-r*((now()-c)/864e5)*(l<50?1.4:l<150?.8:.35)));
+  await put(k,{b:1,x:f?'f':'m',n:nick(f),v,g:'',c,l0,r,l,...skills(v,l,k),t:now()})}await load()}
+// de vez em quando o GOD grava o nível atual no servidor (para quem usa versões antigas do jogo)
+async function sync(){if(!godOn())return;await load();for(const b of mine()){const o=live(b);delete o.k;await put(b.k,o)}}
+setInterval(sync,30*60*1000);setTimeout(sync,30000);
 async function wipe(){await load();for(const b of mine())await del(b.k);await load()}
-const LSon=()=>{try{return localStorage.getItem('eco-tb51')==='1'}catch(e){return false}};
-setInterval(()=>{tick()},5*60*1000);setTimeout(()=>{tick()},20000);
 try{
   ACT.tb51=async v=>{if(!godOn())return toast('Só o CHAR GOD, online, controla os bots de teste.');
-    if(v==='off'){try{localStorage.setItem('eco-tb51','0')}catch(e){}toast('Apagando bots de teste…');await wipe();toast('Bots de teste apagados do ranking e do online.');return renderSheet()}
-    try{localStorage.setItem('eco-tb51','1')}catch(e){}toast('Criando bots de teste…');await create(+v||25);toast(`${mine().length} bots de teste no ranking.`);renderSheet()};
+    if(v==='off'){toast('Apagando bots de teste…');await wipe();toast('Bots de teste apagados do ranking e do online.');return renderSheet()}
+    toast('Criando bots de teste…');await create(+v||25);toast(`${mine().length} bots de teste no ranking.`);renderSheet()};
   const _cf51=SHEETS.config;SHEETS.config=function(){const r=_cf51.apply(this,arguments);if(!godOn())return r;const n=mine().length,o=online().length;
-    r[1]=`<h3>Bots de teste (só CHAR GOD)</h3><p class="muted" style="margin:0 0 8px;font-size:.85rem">Bots que aparecem no ranking e no online para testar o servidor. Eles só sobem de nível e entram/saem do online enquanto este GOD está com o jogo aberto. <b>Desligue antes de divulgar o jogo ou de vender VIP</b>: o botão apaga todos de uma vez.</p>
+    r[1]=`<h3>Bots de teste (só CHAR GOD)</h3><p class="muted" style="margin:0 0 8px;font-size:.85rem">Bots no ranking e no online, 24 horas, mesmo com você offline. Entram e saem do online conforme o horário (mais à noite) e sobem de nível sozinhos. <b>Desligue antes de divulgar o jogo ou de vender VIP</b>: o botão apaga todos de uma vez.</p>
       <p style="margin:0 0 8px">Agora: <b>${n}</b> no ranking · <b>${o}</b> online</p><div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:14px"><button class="btn sm pri" data-a="tb51" data-v="15">15 bots</button><button class="btn sm pri" data-a="tb51" data-v="30">30 bots</button><button class="btn sm pri" data-a="tb51" data-v="60">60 bots</button><button class="btn sm" data-a="tb51" data-v="off">Desligar e apagar</button></div>`+r[1];return r};
 }catch(e){console.warn('eco51',e)}
+})();
+</script>
+<script id="eco52-js">
+// ===== v52: sugestões dos jogadores, eventos com horário marcado e painel do GOD =====
+(function(){
+'use strict';
+const GOD=()=>{try{return typeof isGod==='function'&&isGod()}catch(e){return false}};
+const ON=()=>{try{return typeof netOn==='function'&&netOn()}catch(e){return false}};
+const DBU=()=>{try{return String(((window.ECO_CONFIG||{}).online||{}).databaseURL||'').replace(/\/$/,'')}catch(e){return''}};
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:v}catch(e){return d}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const css=document.createElement('style');css.textContent=`
+#evb52{position:fixed;top:calc(6px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:7;display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;background:rgba(20,14,8,.92);border:1px solid #7a5c22;color:#f3d98a;font:700 .74rem/1.2 sans-serif;cursor:pointer;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.5);max-width:calc(100vw - 20px);overflow:hidden;text-overflow:ellipsis}
+#evb52.live{border-color:#e6c46b;background:linear-gradient(90deg,rgba(80,52,10,.95),rgba(40,24,6,.95));animation:evp52 1.6s ease-in-out infinite}
+@keyframes evp52{50%{box-shadow:0 0 18px rgba(230,196,107,.55)}}
+@media (max-width:899px) and (orientation:portrait){#evb52{top:auto;bottom:calc(var(--navr,58px) + var(--dockh,140px) + 8px + env(safe-area-inset-bottom,0px));font-size:.7rem}}
+.sg52 textarea{width:100%;min-height:110px;background:#15100b;border:1px solid #4a3a28;border-radius:10px;color:#efe6d4;padding:10px;font:16px/1.4 sans-serif;resize:vertical}
+.sg52 .cnt{font-size:.75rem;color:#a99a83;text-align:right}
+.sg52-item{border:1px solid #3d2f20;border-radius:10px;padding:9px 10px;margin-bottom:7px;background:#1b140d}
+.sg52-item .m{white-space:pre-wrap;margin:5px 0}
+.sg52-st{font-size:.68rem;padding:2px 7px;border-radius:99px;border:1px solid #5a4630}
+.sg52-st.nova{color:#9fd6ff;border-color:#2f5f80}.sg52-st.vendo{color:#ffd76a;border-color:#7a5c22}.sg52-st.feito{color:#7fe09a;border-color:#2f7a45}.sg52-st.recusada{color:#ff9a8a;border-color:#7a3a30}`;
+document.head.appendChild(css);
+
+// =====================================================================
+// 1. AGENDA DE EVENTOS (horário de Brasília) — igual para todo mundo
+// =====================================================================
+const AG={on:true,xpH:19,xpMult:2,bossH:20,bossLoot:2,sabH:15};
+window.ECO_AGENDA=AG;
+async function agLoad(){try{const r=await fetch(DBU()+'/agenda.json');const j=await r.json();if(j&&!j.error&&typeof j==='object')Object.assign(AG,j)}catch(e){}}
+agLoad();setInterval(agLoad,5*60*1000);
+const BR=t=>{try{const p=new Intl.DateTimeFormat('en-GB',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',weekday:'short',hour12:false}).formatToParts(new Date(t));const o={};for(const x of p)o[x.type]=x.value;return{h:+o.hour%24,m:+o.minute,wd:o.weekday}}catch(e){const d=new Date(t);return{h:d.getHours(),m:d.getMinutes(),wd:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]}}};
+// lista dos eventos: [nome, início em hora cheia, duração em min, tipo]
+function evList(t=Date.now()){if(!AG.on)return[];const b=BR(t),L=[['Hora da XP em dobro',AG.xpH,60,'xp'],['Boss Global com loot em dobro',AG.bossH,60,'boss']];if(b.wd==='Sat'&&AG.sabH!=null)L.push(['Sábado: XP em dobro',AG.sabH,120,'xp']);return L}
+function evState(t=Date.now()){const b=BR(t),mins=b.h*60+b.m;let live=null,next=null;
+  for(const [n,h,d,k] of evList(t)){const s=h*60,e=s+d;if(mins>=s&&mins<e){if(!live||k==='boss')live={n,k,left:e-mins}}else{let wait=s-mins;if(wait<0)wait+=1440;if(!next||wait<next.wait)next={n,k,wait,h}}}
+  return{live,next}}
+window.ECO_EVSTATE=evState;
+const xpLive=()=>{const s=evState();return s.live&&s.live.k==='xp'};
+const bossLive=()=>{const s=evState();return s.live&&s.live.k==='boss'};
+try{const _gx52=gainExp;gainExp=function(x){try{if(x>0&&xpLive()){const g=(typeof EVT50==='object'&&EVT50.until>Date.now()&&EVT50.xp)||1;if(g<(AG.xpMult||2))x=Math.round(x*(AG.xpMult||2))}}catch(e){}return _gx52.call(this,x)}}catch(e){}
+try{const _gl52=gainLoot;gainLoot=function(id,n){try{if(n>0&&bossLive()&&typeof BOSS_HUNT!=='undefined'&&S.hunt===BOSS_HUNT)n=Math.round(n*(AG.bossLoot||2))}catch(e){}return _gl52.call(this,id,n)}}catch(e){}
+const hm=m=>m>=60?`${Math.floor(m/60)}h ${m%60}min`:`${m} min`;
+let lastWarn='';
+function banner(){try{if(!S){return}let el=document.getElementById('evb52');const s=evState();
+  let txt='',live=false,act='';
+  if(s.live){live=true;txt=s.live.k==='xp'?`★ XP ${AG.xpMult||2}x ativa · acaba em ${hm(s.live.left)}`:`⚔ Boss Global: loot ${AG.bossLoot||2}x · ${hm(s.live.left)}`;act=s.live.k}
+  else if(s.next&&s.next.wait<=120){txt=`${s.next.k==='boss'?'⚔':'★'} ${s.next.n} às ${s.next.h}h · em ${hm(s.next.wait)}`;act=s.next.k}
+  if(!txt){if(el)el.remove();return}
+  if(!el){el=document.createElement('div');el.id='evb52';document.body.appendChild(el);el.onclick=()=>{try{if(el.dataset.k==='boss'&&SHEETS.worldboss)openSheet('worldboss');else openSheet('eventos52')}catch(e){}}}
+  el.textContent=txt;el.classList.toggle('live',live);el.dataset.k=act;
+  const key=(s.live?'L'+s.live.n:'N'+(s.next&&s.next.n)+(s.next&&s.next.wait<=5?'5':s.next&&s.next.wait<=15?'15':''));
+  if(key!==lastWarn){if(lastWarn&&(s.live||(s.next&&s.next.wait<=15))){toast(txt);try{msg('★ '+txt,'c-lv')}catch(e){}}lastWarn=key}
+}catch(e){}}
+setInterval(banner,15000);setTimeout(banner,4000);
+try{
+  SHEETS.eventos52=function(){const s=evState();const L=evList();
+    return['Eventos do servidor',`<p class="muted" style="margin:0 0 10px">Todos os dias, no horário de Brasília. Junte seus amigos e venham no mesmo horário!</p>
+      ${s.live?`<div class="li" style="display:block;margin-bottom:10px;border-color:#e6c46b"><b class="gold">AGORA: ${esc(s.live.n)}</b><small style="display:block">acaba em ${hm(s.live.left)}</small></div>`:''}
+      <div class="list">${L.map(([n,h,d,k])=>`<div class="li"><div class="t"><b>${h}h · ${esc(n)}</b><small>${d} minutos${k==='boss'?' · vá na sala do Chefe Global':' · vale em todas as hunts'}</small></div></div>`).join('')||'<p class="muted">Sem eventos agendados.</p>'}</div>
+      ${SHEETS.worldboss?'<div class="row" style="margin-top:10px"><button class="btn pri" data-a="open" data-v="worldboss">Ir para o Chefe Global</button></div>':''}`]};
+  const _mn52=SHEETS.menu;SHEETS.menu=function(){const r=_mn52.apply(this,arguments);try{r[1]=r[1].replace('<h3>Atividades</h3><div class="menu-sec">',`<h3>Atividades</h3><div class="menu-sec"><button class="mi" data-a="open" data-v="eventos52"><img src="${icon('xp')}" alt="">Eventos</button><button class="mi" data-a="open" data-v="sugestoes52"><img src="${icon('ficha')}" alt="">Sugestões</button>`)}catch(e){}return r};
+}catch(e){console.warn('eco52 eventos',e)}
+
+// =====================================================================
+// 2. SUGESTÕES DOS JOGADORES
+// =====================================================================
+const CATS=[['melhoria','Melhoria'],['bug','Problema / bug'],['ideia','Ideia nova'],['balanco','Balanceamento'],['celular','Celular']];
+const mySent=()=>{try{return JSON.parse(LS.get('eco-sg52','[]'))||[]}catch(e){return[]}};
+try{
+  SHEETS.sugestoes52=function(){const mine=mySent().slice(-5).reverse();
+    return['Sugestões',`<div class="sg52"><p class="muted" style="margin:0 0 10px">O que podemos melhorar no jogo? O criador do jogo lê todas as mensagens.</p>
+      <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">${CATS.map(([k,n])=>`<button class="btn sm ${(UI.sgc52||'melhoria')===k?'pri':''}" data-a="sgc52" data-v="${k}">${n}</button>`).join('')}</div>
+      <textarea id="sgt52" maxlength="500" placeholder="Escreva sua sugestão (até 500 letras)">${esc(UI.sgd52||'')}</textarea><div class="cnt" id="sgn52">${(UI.sgd52||'').length}/500</div>
+      <div class="row" style="margin-top:8px"><button class="btn pri" data-a="sgsend52">Enviar sugestão</button></div>
+      ${mine.length?`<h3 style="margin-top:14px">Você enviou</h3>${mine.map(x=>`<div class="sg52-item"><small class="muted">${new Date(x.t).toLocaleString('pt-BR')}</small><div class="m">${esc(x.m)}</div></div>`).join('')}`:''}</div>`]};
+  ACT.sgc52=v=>{const t=document.getElementById('sgt52');if(t)UI.sgd52=t.value;UI.sgc52=v;renderSheet()};
+  document.addEventListener('input',e=>{if(e.target&&e.target.id==='sgt52'){UI.sgd52=e.target.value;const n=document.getElementById('sgn52');if(n)n.textContent=e.target.value.length+'/500'}});
+  ACT.sgsend52=async()=>{const t=document.getElementById('sgt52'),m=(t&&t.value||'').trim();if(m.length<5)return toast('Escreva um pouco mais.');
+    if(!ON())return toast('Entre no modo online para enviar.');const sent=mySent(),day=Date.now()-864e5;
+    if(sent.filter(x=>x.t>day).length>=10)return toast('Você já mandou 10 sugestões hoje. Obrigado!');if(sent.length&&Date.now()-sent[sent.length-1].t<60000)return toast('Espere 1 minuto para mandar outra.');
+    const clean=typeof window.ECO_cleanChat==='function'?window.ECO_cleanChat(m):m;
+    const body={u:NET.uid,n:String(S.nome).slice(0,20),l:S.lvl,v:S.voc,c:UI.sgc52||'melhoria',m:clean.slice(0,500),st:'nova',t:{'.sv':'timestamp'},ua:/Mobi|Android/i.test(navigator.userAgent)?'celular':'computador'};
+    try{const r=await fetch(netURL('sugestoes'),{method:'POST',body:JSON.stringify(body)});if(!r.ok)throw new Error('HTTP '+r.status);
+      sent.push({t:Date.now(),m:clean.slice(0,500)});LS.set('eco-sg52',JSON.stringify(sent.slice(-30)));UI.sgd52='';toast('Sugestão enviada. Obrigado!');renderSheet()}
+    catch(e){toast('Não consegui enviar agora. Tente de novo.')}};
+}catch(e){console.warn('eco52 sugestoes',e)}
+
+// =====================================================================
+// 3. PAINEL DO GOD: sugestões e agenda de eventos
+// =====================================================================
+const SG={list:null,err:'',f:'aberta'};
+async function sgLoad(){if(!GOD()||!ON())return;try{const r=await fetch(netURL('sugestoes','orderBy=%22t%22&limitToLast=300'));const j=await r.json();if(j&&j.error)throw new Error(j.error);
+  SG.list=Object.entries(j||{}).map(([id,v])=>({id,...v})).sort((a,b)=>(b.t||0)-(a.t||0));SG.err=''}catch(e){SG.err=String(e.message||e)}
+  if(UI.sheet==='god'||UI.sheet==='godsug52')renderSheet()}
+try{
+  SHEETS.godsug52=function(){if(!GOD())return['Acesso negado','<p>Somente o CHAR GOD.</p>'];if(!SG.list&&!SG.err)sgLoad();
+    const L=(SG.list||[]).filter(x=>SG.f==='todas'||(SG.f==='aberta'?(x.st==='nova'||x.st==='vendo'):x.st===SG.f));
+    const cnt=k=>(SG.list||[]).filter(x=>k==='aberta'?(x.st==='nova'||x.st==='vendo'):k==='todas'||x.st===k).length;
+    const F=(k,n)=>`<button class="btn sm ${SG.f===k?'pri':''}" data-a="sgf52" data-v="${k}">${n} (${cnt(k)})</button>`;
+    const C=Object.fromEntries(CATS);
+    return['Sugestões dos jogadores',`<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:10px">${F('aberta','Abertas')}${F('feito','Feitas')}${F('recusada','Recusadas')}${F('todas','Todas')}<button class="btn sm" data-a="sgr52">Atualizar</button></div>
+      ${SG.err?`<p class="bad">Não carregou: ${esc(SG.err)}</p>`:''}${!SG.list&&!SG.err?'<p class="muted">Carregando…</p>':''}
+      ${L.map(x=>`<div class="sg52-item"><div class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><b>${esc(x.n||'?')}</b><small class="muted">nível ${x.l||'?'} · ${esc(C[x.c]||x.c||'')} · ${esc(x.ua||'')} · ${x.t?new Date(x.t).toLocaleString('pt-BR'):''}</small><span class="sg52-st ${esc(x.st||'nova')}">${esc(x.st||'nova')}</span></div>
+        <div class="m">${esc(x.m||'')}</div><div class="row" style="gap:4px;flex-wrap:wrap"><button class="btn sm" data-a="sgst52" data-v="${x.id}|vendo">Vendo</button><button class="btn sm pri" data-a="sgst52" data-v="${x.id}|feito">Feito</button><button class="btn sm" data-a="sgst52" data-v="${x.id}|recusada">Recusar</button><button class="btn sm red" data-a="sgdel52" data-v="${x.id}">Apagar</button></div></div>`).join('')||(SG.list?'<p class="muted">Nenhuma sugestão aqui.</p>':'')}`]};
+  ACT.sgf52=v=>{SG.f=v;renderSheet()};ACT.sgr52=()=>{SG.list=null;SG.err='';sgLoad();renderSheet()};
+  ACT.sgst52=async v=>{const [id,st]=String(v).split('|');try{await fetch(netURL('sugestoes/'+id+'/st'),{method:'PUT',body:JSON.stringify(st)});const x=(SG.list||[]).find(x=>x.id===id);if(x)x.st=st}catch(e){toast('Não salvou.')}renderSheet()};
+  ACT.sgdel52=async id=>{try{await fetch(netURL('sugestoes/'+id),{method:'DELETE'});SG.list=(SG.list||[]).filter(x=>x.id!==id)}catch(e){toast('Não apagou.')}renderSheet()};
+  ACT.ag52=async v=>{if(!GOD())return;const [k,val]=String(v).split('|');const o=Object.assign({},AG);
+    if(k==='on')o.on=!o.on;else if(k==='xpH')o.xpH=(+o.xpH+(+val)+24)%24;else if(k==='bossH')o.bossH=(+o.bossH+(+val)+24)%24;else if(k==='xpMult')o.xpMult=Math.max(2,Math.min(5,(+o.xpMult||2)+(+val)));
+    try{const r=await fetch(netURL('agenda'),{method:'PUT',body:JSON.stringify(o)});if(!r.ok)throw new Error('HTTP '+r.status);Object.assign(AG,o);toast('Agenda salva para todos.')}catch(e){toast('Não salvou: '+e.message)}renderSheet()};
+  if(SHEETS.god){const _g52=SHEETS.god;SHEETS.god=function(){const r=_g52.apply(this,arguments);if(!GOD())return r;if(!SG.list&&!SG.err)sgLoad();
+    const n=(SG.list||[]).filter(x=>x.st==='nova').length;
+    r[1]=`<div class="li" style="display:block;margin-bottom:12px;border-color:#7a5c22"><b>Melhorias pedidas pelos jogadores</b><p class="muted" style="margin:3px 0 8px;font-size:.85rem">${SG.list?`${n} nova${n===1?'':'s'} · ${(SG.list||[]).length} no total`:'Carregando…'}</p><button class="btn sm pri" data-a="open" data-v="godsug52">Ver sugestões</button></div>
+      <div class="li" style="display:block;margin-bottom:12px"><b>Agenda de eventos (horário de Brasília)</b><p class="muted" style="margin:3px 0 8px;font-size:.85rem">Todos os dias. Vale para todos os jogadores.</p>
+      <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><button class="btn sm ${AG.on?'pri':''}" data-a="ag52" data-v="on">Eventos: ${AG.on?'ON':'OFF'}</button></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px"><span>XP ${AG.xpMult}x às <b>${AG.xpH}h</b></span><button class="btn sm" data-a="ag52" data-v="xpH|-1">−1h</button><button class="btn sm" data-a="ag52" data-v="xpH|1">+1h</button><button class="btn sm" data-a="ag52" data-v="xpMult|1">XP +1x</button><button class="btn sm" data-a="ag52" data-v="xpMult|-1">XP −1x</button></div>
+      <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><span>Boss Global (loot ${AG.bossLoot}x) às <b>${AG.bossH}h</b></span><button class="btn sm" data-a="ag52" data-v="bossH|-1">−1h</button><button class="btn sm" data-a="ag52" data-v="bossH|1">+1h</button></div></div>`+r[1];return r}}
+}catch(e){console.warn('eco52 god',e)}
 })();
 </script>
