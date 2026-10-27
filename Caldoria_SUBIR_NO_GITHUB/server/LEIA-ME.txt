@@ -1,7 +1,0 @@
-SERVIDOR DO CALDORIA
-- server.js : o servidor (Node.js, sem bibliotecas externas)
-- rules.js : regras do jogo (itens, magias, criaturas, regioes, baus)
-- maps.json : mapas (onde da para andar, zonas seguras, escadas e portais)
-Hospedagem: Render.com -> New Web Service -> repositorio eco-das-cavernas (servico: caldoria)
-  Root Directory: server | Start Command: node server.js | Plano: Free
-Teste local: NOAUTH=1 node server.js e abrir jogar.html?server=ws://localhost:8080&dev=teste
