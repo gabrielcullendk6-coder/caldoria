@@ -1,4 +1,4 @@
-// Eco das Cavernas — servidor do jogo (Node.js, sem dependências)
+// Caldoria — servidor do jogo (Node.js, sem dependências)
 'use strict';
 const http=require('http'),crypto=require('crypto'),zlib=require('zlib'),fs=require('fs'),path=require('path');
 const {IT,isStack,SPELLS,NOME,ZONES,CHESTS,VOC,expFor,FLOOR,STACK}=require('./rules');
@@ -33,7 +33,7 @@ for(const M of Object.values(W))spawnMobs(M);
 const PL=new Map();let PID=1;
 const NAMES=new Map();let namesLoaded=false;
 const normName=n=>String(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
-const RESERVED=['god','gm','admin','adm','moderador','suporte','king valoria','protector daniel','frello','oddy','zorak','arny','mentor roy','eco das cavernas','valoria'];
+const RESERVED=['god','gm','admin','adm','moderador','suporte','king valoria','protector daniel','frello','oddy','zorak','arny','mentor roy','eco das cavernas','valoria','caldoria'];
 async function loadNames(tok){if(namesLoaded)return;try{const r=await fetch(`${FB.db}/rank.json${tok?'?auth='+encodeURIComponent(tok):''}`);if(!r.ok)return;const j=await r.json()||{};for(const [k,v] of Object.entries(j))if(k.endsWith('_v2')&&v&&v.n)NAMES.set(normName(v.n),k.slice(0,-3));namesLoaded=true;console.log('nomes carregados:',NAMES.size)}catch(e){console.log('nomes',e.message)}}
 if(!NOAUTH)loadNames();
 const OUTV={cidadao:1,cavaleiro:1,arqueiro:1,mago:1};
@@ -144,7 +144,7 @@ function act(p,a,o){const P=p.P,G=v=>v.toLocaleString('pt-BR');
   if(a==='profile'){if(o.sex==='male'||o.sex==='female')P.sex=o.sex;
     if(o.nome!=null&&!P._named){const nm=String(o.nome).replace(/[^A-Za-zÀ-ÿ ]/g,'').replace(/\s+/g,' ').trim(),k=normName(nm);
       const bad=nm.length<3||nm.length>14?'O nome precisa ter de 3 a 14 letras.':(!p.god&&RESERVED.some(r=>k===r||k.split(' ').includes(r)))?'Esse nome não é permitido.':(NAMES.has(k)&&NAMES.get(k)!==p.uid)||[...PL.values()].some(q=>q!==p&&q.P._named&&normName(q.P.nome)===k)?'Esse nome já existe. Escolha outro.':null;
-      if(bad){send(p,{t:'nameerr',m:bad});return}P.nome=nm.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');P._named=1;NAMES.set(k,p.uid);send(p,{t:'named',n:P.nome});msg(p,`Bem-vindo ao Eco das Cavernas, ${P.nome}!`,'#ffe08a')}
+      if(bad){send(p,{t:'nameerr',m:bad});return}P.nome=nm.split(' ').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');P._named=1;NAMES.set(k,p.uid);send(p,{t:'named',n:P.nome});msg(p,`Bem-vindo ao Caldoria, ${P.nome}!`,'#ffe08a')}
     save(p)}
   if(a==='home'){if(p.M.name!=='War'&&!p.dead){if(p.lastHit&&now()-p.lastHit<10)return msg(p,'Você está em combate.','#ff9a8a');placeIn(p,'War',150,150)}}
   touch(p)}
@@ -242,7 +242,7 @@ function wsAccept(req,sock){const key=req.headers['sec-websocket-key'];if(!key)r
     if(len>1e6)return ws.close();const mk=mask?buf.slice(off,off+4):null;if(mask)off+=4;if(buf.length<off+len)return;let pl=buf.slice(off,off+len);buf=buf.slice(off+len);if(mk){pl=Buffer.from(pl);for(let i=0;i<pl.length;i++)pl[i]^=mk[i&3]}
     if(op===8)return ws.close();if(op===9){sock.write(Buffer.concat([Buffer.from([0x8A,pl.length]),pl]));continue}if(op===1){let o;try{o=JSON.parse(pl.toString('utf8'))}catch(e){continue}onMsg(p,o).catch(e=>console.log('msg err',e))}}});
   sock.on('close',()=>{ws.open=false;onClose()});sock.on('error',()=>{ws.open=false;onClose()})}
-const srv=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Access-Control-Allow-Origin':'*'});res.end(`Eco das Cavernas — servidor online. Jogadores: ${[...PL.values()].filter(p=>p.uid).length}`)});
+const srv=http.createServer((req,res)=>{res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8','Access-Control-Allow-Origin':'*'});res.end(`Caldoria — servidor online. Jogadores: ${[...PL.values()].filter(p=>p.uid).length}`)});
 srv.on('upgrade',(req,sock)=>wsAccept(req,sock));
-srv.listen(PORT,()=>console.log('Servidor do Eco das Cavernas na porta',PORT,NOAUTH?'(modo teste sem login)':''));
+srv.listen(PORT,()=>console.log('Servidor do Caldoria na porta',PORT,NOAUTH?'(modo teste sem login)':''));
 process.on('SIGTERM',()=>{for(const p of PL.values())save(p);setTimeout(()=>process.exit(0),1500)});
