@@ -1,0 +1,36 @@
+# Caldoria: se você subir a pasta inteira (ex.: Caldoria_SUBIR_NO_GITHUB), este robô
+# move o conteúdo para a raiz do site sozinho e atualiza o GitHub Pages.
+name: Organizar arquivos enviados
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+jobs:
+  organizar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mover pasta enviada para a raiz
+        run: |
+          shopt -s dotglob nullglob
+          moved=0
+          for d in Caldoria_SUBIR_NO_GITHUB Caldoria_1_jogo_novo_no_ar Caldoria_SUBIR_NO_GITHUB*/ ; do
+            d="${d%/}"
+            if [ -d "$d" ] && [ "$d" != "." ]; then
+              cp -rf "$d"/. .
+              git rm -r -q --cached "$d" || true
+              rm -rf "$d"
+              moved=1
+            fi
+          done
+          if [ "$moved" = 1 ]; then
+            git config user.name "caldoria-bot"
+            git config user.email "caldoria-bot@users.noreply.github.com"
+            git add -A
+            git commit -m "Organiza os arquivos enviados na raiz do site"
+            git push
+            curl -s -X POST -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" -H "Accept: application/vnd.github+json" https://api.github.com/repos/${{ github.repository }}/pages/builds || true
+          fi
